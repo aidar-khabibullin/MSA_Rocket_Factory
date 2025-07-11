@@ -19,7 +19,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	customMiddleware "github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/middleware"
+	customMiddleware "github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/api/middleware"
 	orderV1 "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/openapi/order/v1"
 	inventoryV1 "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/proto/inventory/v1"
 	paymentV1 "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/proto/payment/v1"

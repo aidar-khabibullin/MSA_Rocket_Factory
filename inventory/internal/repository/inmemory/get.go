@@ -1,4 +1,4 @@
-package memory
+package inmemory
 
 import (
 	"context"
@@ -21,5 +21,5 @@ func (r *repository) GetPart(ctx context.Context, uuid uuid.UUID) (*model.Part, 
 	}
 
 	part := repoConverter.RepoToModel(repoPart)
-	return &part, nil
+	return part, nil
 }

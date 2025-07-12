@@ -1,4 +1,4 @@
-package memory
+package inmemory
 
 import (
 	"sync"
@@ -15,7 +15,11 @@ type repository struct {
 }
 
 func NewRepository() *repository {
-	return &repository{
+	repo := &repository{	
 		data: make(map[string]*repoModel.RepositoryPart),
 	}
+
+	TestData(repo)
+
+	return repo
 }

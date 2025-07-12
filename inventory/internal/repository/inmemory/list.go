@@ -1,4 +1,4 @@
-package memory
+package inmemory
 
 import (
 	"context"
@@ -7,7 +7,6 @@ import (
 
 	repoConverter "github.com/aidar-khabibullin/MSA_Rocket_Factory/inventory/internal/repository/converter"
 	repoModel "github.com/aidar-khabibullin/MSA_Rocket_Factory/inventory/internal/repository/model"
-	inventoryV1 "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/proto/inventory/v1"
 )
 
 func (r *repository) ListParts(ctx context.Context, filter *model.Filter) (*[]model.Part, error) {
@@ -22,8 +21,8 @@ func (r *repository) ListParts(ctx context.Context, filter *model.Filter) (*[]mo
 		partsFiltered = filtration(filter, partsFiltered)
 	}
 
-	parts := make([]model.Part, 0, len(r.data))
-	for _, repoPart := range r.data {
+	parts := make([]model.Part, 0, len(partsFiltered))
+	for _, repoPart := range partsFiltered {
 		part := *repoConverter.RepoToModel(repoPart)
 		parts = append(parts, part)
 	}
@@ -34,34 +33,34 @@ func (r *repository) ListParts(ctx context.Context, filter *model.Filter) (*[]mo
 func filtration(filter *model.Filter, parts []*repoModel.RepositoryPart) (result []*repoModel.RepositoryPart) {
 	// Создаем мап для фильтрации
 	uuidSet := make(map[string]bool)
-	for _, uuid := range filter.GetPartUuid() {
-		uuidSet[uuid] = true
+	for _, uuid := range filter.Uuids {
+		uuidSet[uuid.String()] = true
 	}
 
 	nameSet := make(map[string]bool)
-	for _, name := range filter.GetPartName() {
+	for _, name := range filter.Names {
 		nameSet[name] = true
 	}
 
-	categorySet := make(map[inventoryV1.Category]bool)
-	for _, category := range filter.GetCategory() {
-		categorySet[category] = true
+	categorySet := make(map[int]bool)
+	for _, category := range filter.Categories {
+		categorySet[int(category)] = true
 	}
 
 	manufacturerCountrySet := make(map[string]bool)
-	for _, manufacturerCountry := range filter.GetManufacturerCountry() {
+	for _, manufacturerCountry := range filter.ManufacturerCountries {
 		manufacturerCountrySet[manufacturerCountry] = true
 	}
 
 	tagSet := make(map[string]bool)
-	for _, tag := range filter.GetTags() {
+	for _, tag := range filter.Tags {
 		tagSet[tag] = true
 	}
 
 	// Фильтруем детали
 	for _, part := range parts {
 		if len(uuidSet) > 0 {
-			if _, ok := uuidSet[part.PartUuid]; !ok {
+			if _, ok := uuidSet[part.OrderUuid]; !ok {
 				continue
 			}
 		}
@@ -85,7 +84,15 @@ func filtration(filter *model.Filter, parts []*repoModel.RepositoryPart) (result
 		}
 
 		if len(tagSet) > 0 {
-			if _, ok := tagSet[part.Tags[0]]; !ok {
+			// Проверяем, есть ли хотя бы один тег из фильтра в тегах детали
+			tagFound := false
+			for _, partTag := range part.Tags {
+				if _, ok := tagSet[partTag]; ok {
+					tagFound = true
+					break
+				}
+			}
+			if !tagFound {
 				continue
 			}
 		}

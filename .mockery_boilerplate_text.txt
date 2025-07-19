@@ -1,0 +1,2 @@
+// Code generated for aidar-khabibullin service
+// © aidar-khabibullin 2025.

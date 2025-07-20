@@ -4,8 +4,9 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/model"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/model"
 )
 
 func (s *ServiceSuite) TestPayOrder_Success() {
@@ -80,4 +81,3 @@ func (s *ServiceSuite) TestPayOrder_OrderNotFound() {
 
 	s.orderRepository.AssertExpectations(s.T())
 }
-

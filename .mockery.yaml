@@ -30,3 +30,7 @@ packages:
   github.com/aidar-khabibullin/MSA_Rocket_Factory/payment/internal/repository:
     config:
       include-regex: ".*Repository"
+
+  github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/client/grpc:
+    config:
+      include-regex: ".*Client"

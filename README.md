@@ -1,4 +1,6 @@
 # MSA_Rocket_Factory
+![Lint](./lint-badge.svg)
+![Tests](./test-badge.svg)
 [![Coverage_Report](https://img.shields.io/badge/Coverage_Report-0.0%25-red)](https://aidar-khabibullin.github.io/MSA_Rocket_Factory)
 
 ## Описание

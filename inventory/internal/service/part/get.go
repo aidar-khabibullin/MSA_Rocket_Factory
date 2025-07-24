@@ -2,7 +2,6 @@ package part
 
 import (
 	"context"
-
 	"github.com/google/uuid"
 
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/inventory/internal/model"

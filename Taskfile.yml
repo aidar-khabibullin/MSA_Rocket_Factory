@@ -29,20 +29,20 @@ vars:
   PROTOC_GEN_GRPC_GATEWAY: '{{.BIN_DIR}}/protoc-gen-grpc-gateway'
   PROTOC_GEN_VALIDATE: '{{.BIN_DIR}}/protoc-gen-validate'
   PROTOC_GEN_OPENAPIV2: '{{.BIN_DIR}}/protoc-gen-openapiv2'
-  GRPCURL: "{{.BIN_DIR}}/grpcurl"
+  GRPCURL: '{{.BIN_DIR}}/grpcurl'
   MOCKERY: "{{.BIN_DIR}}/mockery"
 
   COVERAGE_DIR: '{{.ROOT_DIR}}/coverage'
+  COVERAGE_FILE: total.out
 
   NODE_MODULES_DIR: '{{.ROOT_DIR}}/node_modules/.bin'
   REDOCLY: '{{.NODE_MODULES_DIR}}/redocly'
 
   OPEN_API_ORDER_V1_BASE: '{{.ROOT_DIR}}/shared/api/order/v1/order.openapi.yaml'
   OPEN_API_ORDER_V1_BUNDLE: '{{.ROOT_DIR}}/shared/api/bundles/order.openapi.v1.bundle.yaml'
-
   OPEN_API_FILES: '{{.ROOT_DIR}}/shared/api/bundles'
 
-  MODULES: assembly inventory order payment platform iam notification
+  MODULES: inventory order payment
 
 tasks:
   install-formatters:
@@ -67,7 +67,6 @@ tasks:
     status:
       - test -x {{.GOFUMPT}}
       - test -x {{.GCI}}
-
   format:
     desc: "Форматирует весь проект gofumpt + gci, исключая mocks"
     summary: |
@@ -94,7 +93,7 @@ tasks:
         for module in {{.MODULES}}; do
           if [ -d "$module" ]; then
             echo "🎯 Сортируем импорты в $module"
-            find $module -type f -name '*.go' ! -path '*/mocks/*' -exec {{.GCI}} write -s standard -s default -s "prefix(github.com/olezhek28/microservices-course-olezhek-solution)" {} +
+            find $module -type f -name '*.go' ! -path '*/mocks/*' -exec {{.GCI}} write -s standard -s default -s "prefix(github.com/aidar-khabibullin/MSA_Rocket_Factory)" {} +
           fi
         done
 
@@ -114,7 +113,6 @@ tasks:
         }
     status:
       - test -x {{.GOLANGCI_LINT}}
-
   lint:
     desc: "Запускает golangci-lint для всех модулей"
     summary: |
@@ -187,14 +185,12 @@ tasks:
     dir: shared/proto
     cmds:
       - '{{.BUF}} generate'
-
   proto:lint:
     deps: [ install-buf, proto:install-plugins ]
     desc: Проверка .proto-файлов на соответствие стилю
     dir: shared/proto
     cmds:
       - '{{.BUF}} lint'
-
   redocly-cli:install:
     desc: Установить локально Redocly CLI
     cmds:
@@ -208,13 +204,11 @@ tasks:
     deps: [ redocly-cli:install ]
     cmds:
       - '{{.REDOCLY}} bundle {{.OPEN_API_ORDER_V1_BASE}} -o {{.OPEN_API_ORDER_V1_BUNDLE}}'
-
   redocly-cli:bundle:
     desc: Собрать все схемы OpenAPI в общие файлы через локальный redocly
     deps: [ redocly-cli:install ]
     cmds:
       - task: redocly-cli:order-v1-bundle
-
   ogen:install:
     desc: "Скачивает ogen в папку bin"
     cmds:
@@ -250,7 +244,6 @@ tasks:
     cmds:
       - task: proto:gen
       - task: ogen:gen
-
   deps:update:
     desc: "Обновление зависимостей в go.mod во всех модулях"
     cmds:
@@ -282,7 +275,6 @@ tasks:
         }
     status:
       - test -x {{.GRPCURL}}
-
   test-api:
     desc: "🧪 Запуск тестов для проверки API микросервисов"
     deps: [ grpcurl:install ]
@@ -487,7 +479,6 @@ tasks:
         }
     status:
       - test -x {{.MOCKERY}}
-
   mockery:gen:
     desc: "Генерирует моки интерфейсов с помощью mockery"
     deps: [ mockery:install ]
@@ -504,19 +495,122 @@ tasks:
         rm -rf {{.COVERAGE_DIR}}
         mkdir -p {{.COVERAGE_DIR}}
         
-        # Находим все пакеты, для которых нужно измерить покрытие (исключаем mocks)
-        TARGET_PACKAGES=$(go list ./internal/... | grep -v "/mocks" | grep -E '/(api|service)/' | tr '\n' ',')
+        # Массив для хранения путей к файлам покрытия
+        COVERAGE_FILES=()
         
-        if [ -z "$TARGET_PACKAGES" ]; then
-          echo "⚠️ Не найдено пакетов для тестирования"
-          exit 1
+        # Обрабатываем каждый модуль
+        for mod in {{.MODULES}}; do
+          if [ -d "$mod" ] && [ -f "$mod/go.mod" ]; then
+            echo "🧪 Обрабатываем модуль $mod"
+            
+            # Переходим в директорию модуля
+            cd "$mod"
+            
+            # Проверяем наличие тестов
+            if ! go list ./internal/... 2>/dev/null | grep -q .; then
+              echo "⚠️ В модуле $mod нет пакетов internal"
+              cd ..
+              continue
+            fi
+            
+            # Находим все пакеты для покрытия (исключаем mocks и test)
+            TARGET_PACKAGES=$(go list ./internal/... 2>/dev/null | grep -v "/mocks" | grep -v "/test" | tr '\n' ',')
+            
+            if [ -n "$TARGET_PACKAGES" ]; then
+              echo "📦 Пакеты для покрытия в $mod: $TARGET_PACKAGES"
+              
+              # Запускаем тесты с покрытием для модуля
+              COVERAGE_FILE="{{.COVERAGE_DIR}}/coverage_${mod}.out"
+              
+              # Создаем пустой файл покрытия если тесты не найдены
+              touch "$COVERAGE_FILE"
+              
+              # Запускаем тесты и собираем покрытие
+              # Убираем последнюю запятую из TARGET_PACKAGES
+              TARGET_PACKAGES=${TARGET_PACKAGES%,}
+              
+              echo "🔍 Запускаем: go test -v -coverprofile=$COVERAGE_FILE -coverpkg=$TARGET_PACKAGES ./internal/..."
+              
+              # Запускаем тесты с покрытием
+              go test -v -coverprofile="$COVERAGE_FILE" -coverpkg="$TARGET_PACKAGES" ./internal/... 2>/dev/null
+              TEST_EXIT_CODE=$?
+              
+              if [ $TEST_EXIT_CODE -eq 0 ]; then
+                echo "🔍 Проверяем файл покрытия: $COVERAGE_FILE"
+                echo "🔍 Размер файла: $(ls -la "$COVERAGE_FILE" 2>/dev/null || echo 'файл не существует')"
+                
+                if [ -s "$COVERAGE_FILE" ]; then
+                  COVERAGE_FILES+=("$COVERAGE_FILE")
+                  echo "✅ Покрытие для $mod сохранено в $COVERAGE_FILE"
+                else
+                  echo "⚠️ Нет покрытия для модуля $mod (пустой файл)"
+                  rm -f "$COVERAGE_FILE"
+                fi
+              else
+                echo "⚠️ Ошибка при запуске тестов в модуле $mod (код: $TEST_EXIT_CODE)"
+                rm -f "$COVERAGE_FILE"
+              fi
+            else
+              echo "⚠️ Не найдено пакетов для тестирования в $mod"
+            fi
+            
+            # Возвращаемся в корневую директорию
+            cd ..
+          else
+            echo "⚠️ Модуль $mod не найден или не содержит go.mod"
+          fi
+        done
+        
+        # Объединяем все файлы покрытия
+        if [ ${#COVERAGE_FILES[@]} -gt 0 ]; then
+          echo "🔗 Объединяем файлы покрытия..."
+          
+          # Создаем общий файл покрытия
+          COMBINED_COVERAGE="{{.COVERAGE_DIR}}/coverage.out"
+          
+          # Очищаем файл перед объединением
+          > "$COMBINED_COVERAGE"
+          
+          # Объединяем файлы покрытия
+          echo "🔍 Файлы для объединения: ${COVERAGE_FILES[*]}"
+          
+          # Создаем временный файл для объединения
+          TEMP_COVERAGE=$(mktemp)
+          
+          for file in "${COVERAGE_FILES[@]}"; do
+            echo "🔍 Проверяем файл: $file"
+            echo "🔍 Файл существует: $([ -f "$file" ] && echo "да" || echo "нет")"
+            echo "🔍 Файл не пустой: $([ -s "$file" ] && echo "да" || echo "нет")"
+            if [ -f "$file" ] && [ -s "$file" ]; then
+              echo "🔗 Добавляем файл: $file"
+              # Пропускаем первую строку (mode: set) для всех файлов кроме первого
+              if [ -s "$TEMP_COVERAGE" ]; then
+                tail -n +2 "$file" >> "$TEMP_COVERAGE"
+              else
+                cat "$file" >> "$TEMP_COVERAGE"
+              fi
+            else
+              echo "⚠️ Пропускаем файл: $file"
+            fi
+          done
+          
+          # Перемещаем временный файл в итоговый
+          mv "$TEMP_COVERAGE" "$COMBINED_COVERAGE"
+          
+          # Проверяем, что общий файл не пустой
+          if [ -s "$COMBINED_COVERAGE" ]; then
+            echo "🧾 Общее покрытие:"
+            go tool cover -func="$COMBINED_COVERAGE" | tail -n1
+          else
+            echo "⚠️ Общий файл покрытия пустой после объединения"
+            echo "total: (statements) 0.0%"
+          fi
+        else
+          echo "⚠️ Не удалось собрать покрытие ни для одного модуля"
+          echo "total: (statements) 0.0%"
+          # Создаем пустой файл покрытия для совместимости
+          touch "{{.COVERAGE_DIR}}/coverage.out"
         fi
-        
-        echo "🧪 Запуск тестов со сбором покрытия для всех модулей..."
-        go test -v -coverprofile={{.COVERAGE_DIR}}/coverage.out -coverpkg=$TARGET_PACKAGES ./...
-        
-        echo "🧾 Общее покрытие:"
-        go tool cover -func={{.COVERAGE_DIR}}/coverage.out | tail -n1
 
   coverage:html:
     desc: "Генерирует HTML-отчёт покрытия и открывает его в браузере"
@@ -535,3 +629,19 @@ tasks:
         else
           echo "📂 Отчёт сохранён в $OUTPUT (открой вручную)"
         fi
+  test:
+    desc: "Запускает юнит-тесты для всех модулей"
+    summary: |
+      Запускает юнит-тесты для указанных модулей проекта.
+      Можно указать конкретные модули через переменную MODULES.
+    cmds:
+      - |
+        go clean -testcache
+        ERR=0
+        for mod in {{.MODULES}}; do
+          if [ -d "$mod" ]; then
+            echo "🧪 Тестируем модуль $mod"
+            go test -v ./$mod/... || ERR=1
+          fi
+        done
+        exit $ERR

@@ -64,7 +64,7 @@ linters: # Список активных и отключённых линтер�
           show-ignored: true # Показывать проигнорированные проблемы в комментариях
         severity: "medium"   # Минимальная важность проблем, high/medium/low
         confidence: "medium" # Минимальный уровень уверенности, high/medium/low
-        
+
     cyclop:
       max-complexity: 20  # Допустимая сложность функции (больше 10, но не слишком жёстко)
 
@@ -100,5 +100,5 @@ formatters: # Форматтеры кода (проверка стиля)
       sections: # Порядок группировки импортов
         - Standard  # Стандартная библиотека
         - Default   # Сторонние зависимости
-        - Prefix(github.com/aidar-khabibullin/MSA_Rocket_Factory/)  # Локальные импорты проекта
+        - Prefix(github.com/aidar-khabibullin/MSA_Rocket_Factory)  # Локальные импорты проекта
       no-inline-comments: false  # Разрешить комментарии после импортов (true — запретит)

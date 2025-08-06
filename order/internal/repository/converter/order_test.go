@@ -4,10 +4,9 @@ import (
 	"errors"
 
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/model"
 	repoModel "github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/repository/model"
+	"github.com/stretchr/testify/assert"
 )
 
 func (s *ConverterSuite) TestToRepoOrder_Success() {

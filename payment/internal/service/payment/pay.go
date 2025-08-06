@@ -5,7 +5,6 @@ import (
 	"log/slog"
 
 	"github.com/google/uuid"
-
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/payment/internal/model"
 )
 

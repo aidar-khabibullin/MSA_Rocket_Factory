@@ -3,11 +3,10 @@ package inmemory
 import (
 	"context"
 
-	"github.com/samber/lo"
-
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/inventory/internal/model"
 	repoConverter "github.com/aidar-khabibullin/MSA_Rocket_Factory/inventory/internal/repository/converter"
 	repoModel "github.com/aidar-khabibullin/MSA_Rocket_Factory/inventory/internal/repository/model"
+	"github.com/samber/lo"
 )
 
 func (r *repository) ListParts(ctx context.Context, filter *model.Filter) (*[]model.Part, error) {

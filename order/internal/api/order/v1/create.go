@@ -7,7 +7,6 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/model"
 	orderV1 "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/openapi/order/v1"
 )

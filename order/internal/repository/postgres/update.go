@@ -4,7 +4,6 @@ import (
 	"context"
 
 	sq "github.com/Masterminds/squirrel"
-
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/model"
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/repository/converter"
 )

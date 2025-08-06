@@ -2,7 +2,6 @@ package converter
 
 import (
 	"github.com/google/uuid"
-
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/payment/internal/model"
 	paymentV1 "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/proto/payment/v1"
 )

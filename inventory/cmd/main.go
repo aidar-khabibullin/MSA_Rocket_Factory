@@ -8,37 +8,37 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
-	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
 	inventoryV1API "github.com/aidar-khabibullin/MSA_Rocket_Factory/inventory/internal/api/v1"
+	"github.com/aidar-khabibullin/MSA_Rocket_Factory/inventory/internal/config"
 	inventoryRepository "github.com/aidar-khabibullin/MSA_Rocket_Factory/inventory/internal/repository/mongo"
 	inventoryService "github.com/aidar-khabibullin/MSA_Rocket_Factory/inventory/internal/service/part"
 	inventoryV1 "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/proto/inventory/v1"
 )
 
-const grpcPort = 50051
+const configPath = "./deploy/compose/inventory/.env"
+
+func init() {
+	err := config.Load(configPath)
+	if err != nil {
+		panic(fmt.Errorf("failed to load config: %w", err))
+	}
+}
 
 func main() {
 	log.Printf("Inventory service starting...")
 
-	ctx := context.Background()
-
-	// Загружаем переменные окружения
-	err := godotenv.Load("../.env")
-	if err != nil {
-		log.Printf("failed to load .env file: %v\n", err)
-		return
-	}
-	dbURI := os.Getenv("MONGO_URI")
-	dbName := os.Getenv("MONGO_INITDB_DATABASE")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
 
 	// Создаем клиент MongoDB
-	client, err := mongo.Connect(ctx, options.Client().ApplyURI(dbURI))
+	client, err := mongo.Connect(ctx, options.Client().ApplyURI(config.AppConfig().Mongo.URI()))
 	if err != nil {
 		log.Printf("failed to connect to database: %v\n", err)
 		return
@@ -51,10 +51,10 @@ func main() {
 	}()
 
 	// Получаем базу данных
-	db := client.Database(dbName)
+	db := client.Database(config.AppConfig().Mongo.DatabaseName())
 
 	// Занимаем порт для gRPC сервера
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", config.AppConfig().GRPC.Address()))
 	if err != nil {
 		log.Printf("failed to listen: %v\n", err)
 		return
@@ -72,7 +72,7 @@ func main() {
 	reflection.Register(s)
 
 	go func() {
-		log.Printf("🚀 gRPC server listening on %d\n", grpcPort)
+		log.Printf("🚀 gRPC server listening on %d\n", config.AppConfig().GRPC.Address())
 		err = s.Serve(lis)
 		if err != nil {
 			log.Printf("failed to serve: %v\n", err)

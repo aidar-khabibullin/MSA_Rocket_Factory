@@ -1,3 +1,5 @@
+//go:build integration
+
 package integration
 
 import (
@@ -27,7 +29,7 @@ var (
 
 func TestIntegration(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "UFO Service Integration Test Suite")
+	RunSpecs(t, "Inventory Service Integration Test Suite")
 }
 
 var _ = BeforeSuite(func() {
@@ -39,7 +41,7 @@ var _ = BeforeSuite(func() {
 	suiteCtx, suiteCancel = context.WithTimeout(context.Background(), testsTimeout)
 
 	// Загружаем .env файл и устанавливаем переменные в окружение
-	envVars, err := godotenv.Read(filepath.Join("..", "..", "..", "deploy", "compose", "ufo", ".env"))
+	envVars, err := godotenv.Read(filepath.Join("..", "..", "..", "deploy", "compose", "inventory", ".env"))
 	if err != nil {
 		logger.Fatal(suiteCtx, "Не удалось загрузить .env файл", zap.Error(err))
 	}

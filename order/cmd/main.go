@@ -2,10 +2,10 @@ package main
 
 import (
 	"context"
-	"log"
-	"os"
+	"fmt"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"go.uber.org/zap"
 
@@ -15,43 +15,41 @@ import (
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/platform/pkg/logger"
 )
 
+const configPath = "../deploy/compose/order/.env"
+
+func init() {
+	err := config.Load(configPath)
+	if err != nil {
+		panic(fmt.Errorf("failed to load config: %w", err))
+	}
+}
+
 func main() {
-	log.Printf("Order service starting...")
 
-	ctx := context.Background()
+	appCtx, appCancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer appCancel()
+	defer gracefulShutdown()
 
-	// Загружаем конфигурацию
-	err := config.Load("../.env")
+	closer.Configure(syscall.SIGINT, syscall.SIGTERM)
+
+	a, err := app.New(appCtx)
 	if err != nil {
-		log.Fatalf("failed to load config: %v", err)
+		logger.Error(appCtx, "❌ Не удалось создать приложение", zap.Error(err))
+		return
 	}
 
-	// Создаем и запускаем приложение
-	orderApp, err := app.New(ctx)
+	err = a.Run(appCtx)
 	if err != nil {
-		log.Fatalf("failed to create app: %v", err)
+		logger.Error(appCtx, "❌ Ошибка при работе приложения", zap.Error(err))
+		return
 	}
+}
 
-	// Запускаем приложение в горутине
-	go func() {
-		err = orderApp.Run(ctx)
-		if err != nil {
-			logger.Error(ctx, "failed to run app", zap.Error(err))
-		}
-	}()
+func gracefulShutdown() {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
-	// Graceful shutdown
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-
-	logger.Info(ctx, "🛑 Завершение работы сервера...")
-
-	// Закрываем все ресурсы
-	err = closer.CloseAll(ctx)
-	if err != nil {
-		logger.Error(ctx, "failed to close resources", zap.Error(err))
+	if err := closer.CloseAll(ctx); err != nil {
+		logger.Error(ctx, "❌ Ошибка при завершении работы", zap.Error(err))
 	}
-
-	logger.Info(ctx, "✅ Сервер остановлен")
 }

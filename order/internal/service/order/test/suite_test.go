@@ -3,11 +3,12 @@ package order_test
 import (
 	"testing"
 
+	"github.com/stretchr/testify/suite"
+
 	clientMocks "github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/client/grpc/mocks"
 	repoMocks "github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/repository/mocks"
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/service"
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/service/order"
-	"github.com/stretchr/testify/suite"
 )
 
 type ServiceSuite struct {

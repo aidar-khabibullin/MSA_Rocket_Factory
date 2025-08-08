@@ -2,6 +2,7 @@ package converter
 
 import (
 	"github.com/google/uuid"
+
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/inventory/internal/model"
 	repoModel "github.com/aidar-khabibullin/MSA_Rocket_Factory/inventory/internal/repository/model"
 )

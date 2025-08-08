@@ -7,6 +7,7 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
+
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/model"
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/repository/converter"
 	repoModel "github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/repository/model"

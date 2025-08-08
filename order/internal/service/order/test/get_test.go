@@ -4,8 +4,9 @@ import (
 	"context"
 
 	"github.com/google/uuid"
-	"github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/model"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/model"
 )
 
 func (s *ServiceSuite) TestGetOrder_Success() {

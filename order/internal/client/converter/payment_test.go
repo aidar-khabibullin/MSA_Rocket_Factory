@@ -1,8 +1,9 @@
 package converter
 
 import (
-	paymentV1 "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/proto/payment/v1"
 	"github.com/stretchr/testify/assert"
+
+	paymentV1 "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/proto/payment/v1"
 )
 
 func (s *ConverterSuite) TestToProtoPaymentMethod_Card() {

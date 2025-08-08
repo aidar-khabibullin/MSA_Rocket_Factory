@@ -4,9 +4,10 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/inventory/internal/model"
 	inventoryV1 "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/proto/inventory/v1"
-	"github.com/stretchr/testify/assert"
 )
 
 func (s *ConverterSuite) TestToProtoPart_EngineCategory() {

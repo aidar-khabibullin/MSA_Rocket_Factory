@@ -1,9 +1,11 @@
 package middleware
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 	"time"
+
+	"github.com/aidar-khabibullin/MSA_Rocket_Factory/platform/pkg/logger"
 )
 
 // RequestLogger логирует информацию о HTTP запросах
@@ -19,7 +21,7 @@ func RequestLogger(next http.Handler) http.Handler {
 
 		// Логируем информацию о запросе
 		duration := time.Since(start)
-		log.Printf("📝 %s %s %d %v", r.Method, r.URL.Path, ww.statusCode, duration)
+		logger.Info(r.Context(), fmt.Sprintf("%s %s %d %v", r.Method, r.URL.Path, ww.statusCode, duration))
 	})
 }
 

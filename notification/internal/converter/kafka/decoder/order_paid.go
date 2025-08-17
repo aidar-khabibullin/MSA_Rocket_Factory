@@ -3,7 +3,6 @@ package decoder
 import (
 	"fmt"
 
-	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/notification/internal/model"

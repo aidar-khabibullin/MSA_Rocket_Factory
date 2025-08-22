@@ -5,16 +5,16 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"regexp"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/argon2"
 
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/iam/internal/model"
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/iam/internal/repository"
 	def "github.com/aidar-khabibullin/MSA_Rocket_Factory/iam/internal/service"
+	"github.com/aidar-khabibullin/MSA_Rocket_Factory/platform/pkg/logger"
 )
 
 var _ def.UserService = (*service)(nil)
@@ -26,12 +26,7 @@ const (
 	argon2Threads = 4
 	argon2KeyLen  = 32
 	saltLen       = 16
-
-	// Минимальная длина пароля
-	minPasswordLength = 8
 )
-
-var emailRegex = regexp.MustCompile(`^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$`)
 
 type service struct {
 	iamRepository repository.IAMRepository
@@ -44,14 +39,19 @@ func NewService(iamRepository repository.IAMRepository) *service {
 }
 
 func (s *service) Register(ctx context.Context, registrationInfo *model.UserRegistrationInfo) (*model.User, error) {
-	// Валидация входных данных
-	if err := s.validateRegistrationInfo(registrationInfo); err != nil {
+	// Валидация входных данных с помощью встроенной валидации модели
+	if err := registrationInfo.Validate(); err != nil {
+		logger.Warn(ctx, "🚫 Регистрация отклонена: некорректные данные",
+			zap.String("login", registrationInfo.Login),
+			zap.Error(err))
 		return nil, err
 	}
 
 	// Проверяем, не существует ли уже пользователь с таким логином
 	existingUser, err := s.iamRepository.GetUserByLogin(ctx, registrationInfo.Login)
 	if err == nil && existingUser != nil {
+		logger.Warn(ctx, "🚫 Регистрация отклонена: пользователь уже существует",
+			zap.String("login", registrationInfo.Login))
 		return nil, model.ErrUserAlreadyExists
 	}
 
@@ -75,45 +75,22 @@ func (s *service) Register(ctx context.Context, registrationInfo *model.UserRegi
 	// Сохраняем пользователя в БД
 	user, err = s.iamRepository.CreateUser(ctx, user)
 	if err != nil {
+		logger.Error(ctx, "❌ Ошибка при создании пользователя в БД",
+			zap.String("login", registrationInfo.Login),
+			zap.Error(err))
 		return nil, err
 	}
+
+	logger.Info(ctx, "✅ Пользователь успешно зарегистрирован",
+		zap.String("login", user.Login),
+		zap.String("user_uuid", user.UUID.String()),
+		zap.String("email", user.Email))
 
 	return user, nil
 }
 
 func (s *service) GetUser(ctx context.Context, userUUID uuid.UUID) (*model.User, error) {
 	return s.iamRepository.GetUserByUUID(ctx, userUUID)
-}
-
-// validateRegistrationInfo валидирует данные для регистрации
-func (s *service) validateRegistrationInfo(info *model.UserRegistrationInfo) error {
-	if info.Login == "" {
-		return model.ErrEmptyLogin
-	}
-
-	if info.Password == "" {
-		return model.ErrEmptyPassword
-	}
-
-	if len(info.Password) < minPasswordLength {
-		return model.ErrWeakPassword
-	}
-
-	if info.Email == "" {
-		return model.ErrEmptyEmail
-	}
-
-	if !s.isValidEmail(info.Email) {
-		return model.ErrInvalidEmail
-	}
-
-	return nil
-}
-
-// isValidEmail проверяет корректность email адреса
-func (s *service) isValidEmail(email string) bool {
-	email = strings.ToLower(strings.TrimSpace(email))
-	return emailRegex.MatchString(email)
 }
 
 // hashPassword хэширует пароль с использованием Argon2

@@ -5,7 +5,7 @@
 
 📊 **Отчеты о качестве кода:** 
 - 📊 [Coverage Report](https://aidar-khabibullin.github.io/MSA_Rocket_Factory/) - покрытие бизнес-логики тестами (internal пакеты)
-- 🧪 [Test Report](https://aidar-khabibullin.github.io/MSA_Rocket_Factory/tests/) - результаты unit тестов
+- 🧪 [Test Report](https://aidar-khabibullin.github.io/MSA_Rocket_Factory/tests/) - результаты unit и интеграционных тестов
 - 🔍 [Lint Report](https://aidar-khabibullin.github.io/MSA_Rocket_Factory/lint/) - результаты статического анализа кода
 
 > **Примечание:** Покрытие кода рассчитывается только для бизнес-логики (пакеты `internal/`), исключая `mocks`, `test` пакеты и `main.go` файлы.

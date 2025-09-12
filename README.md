@@ -14,3 +14,6 @@
 https://olezhek28.courses/microservices
 
 ![схема](https://github.com/aidar-khabibullin/MSA_Rocket_Factory/blob/main/docs/logo.png)
+
+## Запуск приложения в Docker Compose
+`task up-all`

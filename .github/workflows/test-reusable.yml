@@ -19,10 +19,10 @@ jobs:
 
     steps:
       - name: 📦 Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v7.0.1
 
       - name: 🗄️ Cache Go modules
-        uses: actions/cache@v4.2.0
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cache/go-build
@@ -32,7 +32,7 @@ jobs:
             ${{ runner.os }}-go-
 
       - name: 🛠 Set up Go
-        uses: actions/setup-go@v5.4.0
+        uses: actions/setup-go@v7.0.0
         with:
           go-version: ${{ inputs.go-version }}
 
@@ -42,7 +42,7 @@ jobs:
           go work sync
 
       - name: 📌 Install Task
-        uses: arduino/setup-task@v2.0.0
+        uses: arduino/setup-task@v3.0.0
 
       - name: 🧪 Run unit tests via Taskfile
         id: test_step
@@ -213,7 +213,7 @@ jobs:
           echo "📊 HTML отчет создан: .github_pages/tests/index.html"
 
       - name: 📤 Upload test report artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: test-report
           path: |

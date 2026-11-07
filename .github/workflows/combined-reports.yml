@@ -26,15 +26,15 @@ jobs:
 
     steps:
       - name: 📦 Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v7.0.1
 
       - name: 🛠️ Set up Go
-        uses: actions/setup-go@v5.4.0
+        uses: actions/setup-go@v7.0.0
         with:
           go-version: ${{ inputs.go-version }}
 
       - name: 🗄️ Cache Go modules
-        uses: actions/cache@v4.2.0
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cache/go-build
@@ -55,7 +55,7 @@ jobs:
           done
 
       - name: 📌 Install Task
-        uses: arduino/setup-task@v2.0.0
+        uses: arduino/setup-task@v3.0.0
 
       - name: 📌 Install gocov-html
         run: |
@@ -383,10 +383,10 @@ jobs:
           echo "✅ Файлы .env для сервисов созданы"
 
       - name: 🐳 Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: 🧩 Set up Docker cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-buildx-${{ github.sha }}
@@ -983,7 +983,7 @@ jobs:
       # Update coverage badge
       - name: Update coverage Badge
         if: github.ref == 'refs/heads/main'
-        uses: tj-actions/coverage-badge-go@v2
+        uses: tj-actions/coverage-badge-go@v3
         with:
           filename: cover.out
           green: 80
@@ -992,7 +992,7 @@ jobs:
 
       - name: Verify Changed files
         if: github.ref == 'refs/heads/main'
-        uses: tj-actions/verify-changed-files@v12
+        uses: tj-actions/verify-changed-files@v20
         id: verify-changed-files
         with:
           files: README.md
@@ -1019,17 +1019,17 @@ jobs:
 
       # Pages setup and deployment
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
         with:
           enablement: true
 
       - name: Upload Artifact for Pages
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: .github_pages/
 
       - name: Upload Combined Report as Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: combined-reports
           path: |
@@ -1083,7 +1083,7 @@ jobs:
     steps:
       - name: Deploy reports to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
         continue-on-error: true
 
       - name: Check deployment status

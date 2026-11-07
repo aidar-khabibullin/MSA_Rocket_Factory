@@ -17,19 +17,19 @@ jobs:
 
     steps:
       - name: 📦 Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v7.0.1
 
       - name: 🛠 Set up Go
-        uses: actions/setup-go@v5.4.0
+        uses: actions/setup-go@v7.0.0
         with:
           go-version: ${{ inputs.go-version }}
           cache: false
 
       - name: 🐳 Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: 🧩 Set up Docker cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: /tmp/.buildx-cache
           key: ${{ runner.os }}-buildx-${{ github.sha }}
@@ -37,7 +37,7 @@ jobs:
             ${{ runner.os }}-buildx-
 
       - name: 📌 Install Task
-        uses: arduino/setup-task@v2.0.0
+        uses: arduino/setup-task@v3.0.0
 
       - name: 📄 Подготовка окружения для тестов
         env:

@@ -26,10 +26,10 @@ jobs:
     steps:
       # tests
       - name: Checkout code
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v7.0.1
 
       - name: Install Go
-        uses: actions/setup-go@v5.4.0
+        uses: actions/setup-go@v7.0.0
         with:
           go-version: ${{ inputs.go-version }}
 
@@ -37,7 +37,7 @@ jobs:
         run: go mod verify
 
       - name: Restore cache
-        uses: actions/cache@v4.2.0
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cache/go-build
@@ -357,17 +357,17 @@ jobs:
 
       # pages
       - name: Setup Pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
         with:
           enablement: true
 
       - name: Upload Artifact for Pages
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: .github_pages/
 
       - name: Upload Coverage Report as Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-report
           path: |
@@ -379,7 +379,7 @@ jobs:
       # badge - обновляем только для main ветки
       - name: Update coverage Badge
         if: github.ref == 'refs/heads/main'
-        uses: tj-actions/coverage-badge-go@v2
+        uses: tj-actions/coverage-badge-go@v3
         with:
           filename: cover.out
           green: 80
@@ -388,7 +388,7 @@ jobs:
 
       - name: Verify Changed files
         if: github.ref == 'refs/heads/main'
-        uses: tj-actions/verify-changed-files@v12
+        uses: tj-actions/verify-changed-files@v20
         id: verify-changed-files
         with:
           files: README.md
@@ -458,7 +458,7 @@ jobs:
     steps:
       - name: Deploy coverage report to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
         continue-on-error: true
 
       - name: Check deployment status
@@ -489,7 +489,7 @@ jobs:
     
     steps:
       - name: Download coverage artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: coverage-report
           path: coverage-report
@@ -515,7 +515,7 @@ jobs:
           fi
 
       - name: Upload simple report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: simple-coverage-report
           path: coverage-report/simple-report.html

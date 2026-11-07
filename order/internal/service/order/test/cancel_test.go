@@ -179,3 +179,17 @@ func (s *ServiceSuite) TestCancelOrder_UpdateError() {
 
 	s.orderRepository.AssertExpectations(s.T())
 }
+
+func (s *ServiceSuite) TestCancelOrder_AlreadyAssembled() {
+	orderUUID := uuid.New()
+
+	s.orderRepository.On("GetOrder", mock.Anything, orderUUID).
+		Return(&model.Order{OrderUUID: orderUUID, Status: model.StatusAssembled}, nil)
+
+	result, err := s.service.CancelOrder(context.Background(), &model.Order{OrderUUID: orderUUID})
+
+	s.Require().Empty(result)
+	s.Require().ErrorIs(err, model.ErrPaid)
+	// UpdateOrder не ожидается: мок упал бы при попытке сохранить отмену
+	s.orderRepository.AssertNotCalled(s.T(), "UpdateOrder", mock.Anything, mock.Anything)
+}

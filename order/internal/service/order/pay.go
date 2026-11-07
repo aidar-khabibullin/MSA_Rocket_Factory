@@ -2,6 +2,7 @@ package order
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -66,7 +67,11 @@ func (s service) PayOrder(ctx context.Context, order *model.Order) (*model.Order
 
 	// Обновляем заказ в хранилище
 	span.AddEvent("updating order in repository")
-	updatedOrder, err := s.orderRepository.UpdateOrder(ctx, paidOrder)
+	// Условный UPDATE: если параллельный запрос уже изменил статус, не публикуем повторное событие
+	updatedOrder, err := s.orderRepository.UpdateOrderIfStatus(ctx, paidOrder, model.StatusPendingPayment)
+	if errors.Is(err, model.ErrOrderStatusChanged) {
+		err = fmt.Errorf("service: order %s changed status during payment: %w", dbOrder.OrderUUID, model.ErrOrderNotPayable)
+	}
 	if err != nil {
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())

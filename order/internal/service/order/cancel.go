@@ -23,7 +23,8 @@ func (s service) CancelOrder(ctx context.Context, order *model.Order) (*model.Or
 	}
 
 	// Проверяем статус заказа
-	if order.Status == model.StatusPaid {
+	// Оплаченный (в том числе уже собранный) заказ отменить нельзя
+	if order.Status == model.StatusPaid || order.Status == model.StatusAssembled {
 		return nil, model.ErrPaid
 	}
 	if order.Status == model.StatusCancelled {

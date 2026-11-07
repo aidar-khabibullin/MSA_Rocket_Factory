@@ -33,3 +33,9 @@ examples/
 
 # macOS
 .DS_Store
+
+# Состояние цикла Ralph (меняется при каждом запуске)
+.claude/ralph.iterations.json
+# Скилл не нужен Go-проекту, лежит локально
+.agents/skills/nestjs-best-practices/
+.claude/skills/nestjs-best-practices

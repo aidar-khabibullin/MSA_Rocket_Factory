@@ -1,0 +1,7 @@
+{
+  "active": false,
+  "maxIterations": 10,
+  "maxTurns": 50,
+  "prompt": "Прочитай .claude/ralph.md и следуй правилам оттуда. Возьми следующую открытую Issue из milestone '{milestone}' и реализуй её в ветке '{branch}'",
+  "phases": []
+}

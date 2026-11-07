@@ -16,6 +16,12 @@ updates:
       interval: weekly
     open-pull-requests-limit: 5
     groups:
+      # Пакеты OpenTelemetry связаны версиями (otel, otel/log, otel/sdk/log, otlploggrpc и др.),
+      # поэтому обновляем их одним PR, включая major. По отдельности они ломают сборку platform.
+      # Группа стоит первой: Dependabot относит зависимость к первой подходящей группе.
+      opentelemetry:
+        patterns:
+          - "go.opentelemetry.io/*"
       # Минорные и патч-обновления объединяем, чтобы не плодить PR
       go-minor-and-patch:
         update-types:

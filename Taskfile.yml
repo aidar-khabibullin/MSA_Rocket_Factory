@@ -377,6 +377,7 @@ tasks:
 
   up-core:
     desc: Поднять core контейнеры
+    deps: [ env:ensure ]
     dir: deploy/compose/core
     cmds:
       - echo "[task] 🚀 Поднимаем core контейнеры"
@@ -391,6 +392,7 @@ tasks:
 
   up-inventory:
     desc: Поднять Inventory сервис и все его зависимости
+    deps: [ env:ensure ]
     dir: deploy/compose/inventory
     cmds:
       - echo "[task] 📦 Поднимаем Inventory с зависимостями"
@@ -398,6 +400,7 @@ tasks:
 
   up-payment:
     desc: Поднять Payment сервис и все его зависимости
+    deps: [ env:ensure ]
     dir: deploy/compose/payment
     cmds:
       - echo "[task] 📦 Поднимаем Payment с зависимостями"
@@ -405,6 +408,7 @@ tasks:
 
   up-assembly:
     desc: Поднять Assembly сервис и все его зависимости
+    deps: [ env:ensure ]
     dir: deploy/compose/assembly
     cmds:
       - echo "[task] 📦 Поднимаем Assembly с зависимостями"
@@ -412,6 +416,7 @@ tasks:
 
   up-notification:
     desc: Поднять Notification сервис и все его зависимости
+    deps: [ env:ensure ]
     dir: deploy/compose/notification
     cmds:
       - echo "[task] 📦 Поднимаем Notification с зависимостями"
@@ -447,6 +452,7 @@ tasks:
 
   up-order:
     desc: Поднять Order сервис и все его зависимости
+    deps: [ env:ensure ]
     dir: deploy/compose/order
     cmds:
       - echo "[task] 📦 Поднимаем Order с зависимостями"
@@ -461,6 +467,7 @@ tasks:
 
   up-iam:
     desc: Поднять IAM сервис и все его зависимости
+    deps: [ env:ensure ]
     dir: deploy/compose/iam
     cmds:
       - echo "[task] 📦 Поднимаем IAM с зависимостями"
@@ -752,6 +759,16 @@ tasks:
           GOBIN={{.BIN_DIR}} go install github.com/a8m/envsubst/cmd/envsubst@{{.ENVSUBST_VERSION}}
         }
         echo "✅ envsubst установлен: {{.ENVSUBST}}"
+
+  env:ensure:
+    desc: "Создаёт .env файлы для compose, только если их ещё нет (не перезаписывает существующие)"
+    cmds:
+      - task: env:generate
+    status:
+      - |
+        for svc in $(echo "{{.SERVICES}}" | tr ',' ' '); do
+          test -f "{{.ROOT_DIR}}/deploy/compose/$svc/.env" || exit 1
+        done
 
   env:generate:
     desc: "Генерирует .env файлы для всех сервисов из шаблонов и единого файла конфигурации"

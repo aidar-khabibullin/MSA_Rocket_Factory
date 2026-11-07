@@ -1,6 +1,6 @@
 module github.com/aidar-khabibullin/MSA_Rocket_Factory/shared
 
-go 1.24
+go 1.24.4
 
 require (
 	github.com/go-faster/errors v0.7.1

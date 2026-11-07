@@ -45,8 +45,9 @@ func (a *api) Register(ctx context.Context, req *iamV1.RegisterRequest) (*iamV1.
 		if errors.Is(err, model.ErrInvalidEmail) {
 			return nil, status.Error(codes.InvalidArgument, "invalid email format")
 		}
-		if errors.Is(err, model.ErrWeakPassword) {
-			return nil, status.Error(codes.InvalidArgument, "password is too weak")
+		if errors.Is(err, model.ErrWeakPassword) || errors.Is(err, model.ErrInvalidLogin) {
+			// Сообщение содержит конкретное нарушенное правило и безопасно для показа пользователю.
+			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		return nil, status.Error(codes.Internal, "internal server error")
 	}

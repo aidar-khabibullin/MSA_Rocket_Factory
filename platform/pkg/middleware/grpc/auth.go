@@ -3,6 +3,7 @@ package grpc
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -11,6 +12,9 @@ import (
 
 	iamV1 "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/proto/iam/v1"
 )
+
+// healthServicePrefix — методы стандартного gRPC Health Checking Protocol, они доступны без аутентификации.
+const healthServicePrefix = "/grpc.health.v1.Health/"
 
 const (
 	// SessionUUIDMetadataKey ключ для передачи UUID сессии в gRPC metadata
@@ -49,6 +53,11 @@ func (i *AuthInterceptor) Unary() grpc.UnaryServerInterceptor {
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (any, error) {
+		// Проверки живости (docker healthcheck, k8s probe, шлюз) не несут сессии пользователя.
+		if strings.HasPrefix(info.FullMethod, healthServicePrefix) {
+			return handler(ctx, req)
+		}
+
 		authCtx, err := i.authenticate(ctx)
 		if err != nil {
 			return nil, err

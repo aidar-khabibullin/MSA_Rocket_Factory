@@ -33,3 +33,10 @@ type MetricsConfig interface {
 	CollectorEndpoint() string
 	CollectorInterval() time.Duration
 }
+
+// DedupConfig — настройки дедупликации Kafka-событий.
+type DedupConfig interface {
+	// Addr — адрес Redis; пусто — дедупликация отключена.
+	Addr() string
+	TTL() time.Duration
+}

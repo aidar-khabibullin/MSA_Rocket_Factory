@@ -46,7 +46,7 @@ func (p *service) ProduceAssembly(ctx context.Context, event model.ShipAssembled
 		return err
 	}
 
-	err = p.assemblyProducer.Send(ctx, []byte(event.EventUUID.String()), payload)
+	err = p.assemblyProducer.Send(ctx, []byte(event.OrderUUID.String()), payload)
 	duration := time.Since(startTime)
 
 	// Записываем метрики

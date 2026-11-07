@@ -55,9 +55,20 @@ func (s *service) UpdateOrderStatus(ctx context.Context, orderUUID string, statu
 		return fmt.Errorf("failed to get order: %w", err)
 	}
 
+	current := order.Status
+	if current == status {
+		// Повторная доставка того же события: состояние уже достигнуто, писать нечего.
+		return nil
+	}
+	if !current.CanTransitionTo(status) {
+		return fmt.Errorf("%w: %s -> %s", model.ErrInvalidStatusChange, current, status)
+	}
+
 	order.Status = status
 
-	_, err = s.orderRepository.UpdateOrder(ctx, order)
+	// Условное обновление: если статус успел измениться, UPDATE не затронет строку,
+	// и устаревшее событие не перезапишет более новое состояние.
+	_, err = s.orderRepository.UpdateOrderIfStatus(ctx, order, current)
 	if err != nil {
 		return fmt.Errorf("failed to update order status: %w", err)
 	}

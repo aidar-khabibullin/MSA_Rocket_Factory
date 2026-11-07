@@ -106,6 +106,9 @@ func (d *diContainer) AssemblyRecordedConsumer(ctx context.Context) wrappedKafka
 		// Создаем middleware для метрик
 		var middlewares []wrappedKafkaConsumer.Middleware
 		middlewares = append(middlewares, kafkaMiddleware.Logging(logger.Logger()))
+		if dedup := d.dedupMiddleware(ctx, kafkaMetrics); dedup != nil {
+			middlewares = append(middlewares, dedup)
+		}
 
 		// Создаем consumer group middleware для отслеживания ребалансировок
 		var consumerGroupMiddlewares []wrappedKafka.ConsumerGroupHandlerMiddleware
@@ -122,7 +125,7 @@ func (d *diContainer) AssemblyRecordedConsumer(ctx context.Context) wrappedKafka
 			logger.Logger(),
 			middlewares,
 			consumerGroupMiddlewares,
-		)
+		).WithResilience(kafkaMiddleware.ConsumerResilience(kafkaMetrics, config.AppConfig().AssemblyRecordedConsumer.GroupID(), wrappedKafkaConsumer.NewDLQPublisher(d.SyncProducer())))
 	}
 
 	return d.assemblyRecordedConsumer

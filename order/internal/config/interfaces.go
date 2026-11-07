@@ -67,3 +67,10 @@ type TracingConfig interface {
 	Environment() string
 	ServiceVersion() string
 }
+
+// DedupConfig — настройки дедупликации Kafka-событий.
+type DedupConfig interface {
+	// Addr — адрес Redis; пусто — дедупликация отключена.
+	Addr() string
+	TTL() time.Duration
+}

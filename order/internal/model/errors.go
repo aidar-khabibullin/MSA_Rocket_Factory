@@ -4,6 +4,7 @@ import "errors"
 
 var (
 	ErrPartsListNotFound   = errors.New("parts list not found")
+	ErrPartsOutOfStock     = errors.New("parts are out of stock")
 	ErrConvertFromRepo     = errors.New("can't parse to model")
 	ErrConvertFromClient   = errors.New("can't parse to model")
 	ErrInventoryClient     = errors.New("inventory client error")
@@ -14,6 +15,7 @@ var (
 	ErrOrderNotFound       = errors.New("order not found")
 	ErrOrderNotPayable     = errors.New("order is not payable in its current status")
 	ErrOrderStatusChanged  = errors.New("order status was changed concurrently")
+	ErrInvalidStatusChange = errors.New("invalid order status transition")
 	ErrFailedToBuildQuery  = errors.New("failed to build query")
 	ErrFailedToInsertOrder = errors.New("failed to insert order")
 	ErrFailedToUpdateOrder = errors.New("failed to update order")

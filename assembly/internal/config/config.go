@@ -16,6 +16,7 @@ type config struct {
 	AssemblyRecordedProducer AssemblyProducerConfig
 	AssemblyRecordedConsumer AssemblyConsumerConfig
 	Metrics                  MetricsConfig
+	Dedup                    DedupConfig
 }
 
 func Load(path ...string) error {
@@ -44,6 +45,11 @@ func Load(path ...string) error {
 		return err
 	}
 
+	dedupCfg, err := env.NewDedupConfig()
+	if err != nil {
+		return err
+	}
+
 	metricsCfg, err := env.NewMetricsConfig()
 	if err != nil {
 		return err
@@ -55,6 +61,7 @@ func Load(path ...string) error {
 		AssemblyRecordedProducer: assemblyRecordedProducerCfg,
 		AssemblyRecordedConsumer: assemblyRecordedConsumerCfg,
 		Metrics:                  metricsCfg,
+		Dedup:                    dedupCfg,
 	}
 
 	return nil

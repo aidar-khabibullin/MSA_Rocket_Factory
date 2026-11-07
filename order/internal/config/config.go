@@ -19,6 +19,7 @@ type config struct {
 	OrderPaidProducer     OrderPaidProducerConfig
 	ShipAssembledConsumer ShipAssemblyConsumerConfig
 	Metrics               MetricsConfig
+	Dedup                 DedupConfig
 	Tracing               TracingConfig
 }
 
@@ -63,6 +64,11 @@ func Load(path ...string) error {
 		return err
 	}
 
+	dedupCfg, err := env.NewDedupConfig()
+	if err != nil {
+		return err
+	}
+
 	metricsCfg, err := env.NewMetricsConfig()
 	if err != nil {
 		return err
@@ -82,6 +88,7 @@ func Load(path ...string) error {
 		OrderPaidProducer:     orderPaidProducerCfg,
 		ShipAssembledConsumer: shipAssembledConsumerCfg,
 		Metrics:               metricsCfg,
+		Dedup:                 dedupCfg,
 		Tracing:               tracingCfg,
 	}
 

@@ -47,7 +47,7 @@ func (p *service) ProduceOrderPaid(ctx context.Context, event model.OrderPaidEve
 		return err
 	}
 
-	err = p.orderPaidProducer.Send(ctx, []byte(event.EventUUID.String()), payload)
+	err = p.orderPaidProducer.Send(ctx, []byte(event.OrderUUID.String()), payload)
 	duration := time.Since(startTime)
 
 	// Записываем метрики

@@ -340,6 +340,24 @@ services:
       - microservices-net
       # Подключаем контейнер к общей сети, в которой живут все сервисы микросервисной архитектуры
 
+  redis-events: # Redis для дедупликации Kafka-событий (assembly и order хранят здесь обработанные event_uuid)
+    image: redis:7.2.5-alpine3.20
+    container_name: redis-events
+
+    # Данные нужны только как защита от повторной доставки: ключи живут 24 часа, персистентность не требуется.
+    command: [ "redis-server", "--save", "", "--appendonly", "no" ]
+
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    restart: unless-stopped
+
+    networks:
+      - microservices-net
+
   kafka-ui: # Веб-интерфейс Kafka UI для управления брокером и топиками.
     image: provectuslabs/kafka-ui:v0.7.2
     container_name: kafka-ui

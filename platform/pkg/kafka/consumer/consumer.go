@@ -21,6 +21,13 @@ type consumer struct {
 	logger                   Logger
 	middlewares              []Middleware
 	consumerGroupMiddlewares []kafka.ConsumerGroupHandlerMiddleware
+	resilience               Resilience
+}
+
+// WithResilience включает повторы и отправку необработанных сообщений в DLQ.
+func (c *consumer) WithResilience(r Resilience) *consumer {
+	c.resilience = r
+	return c
 }
 
 // NewConsumer — создаёт новый consumer.
@@ -49,9 +56,9 @@ func (c *consumer) Consume(ctx context.Context, handler kafka.MessageHandler) er
 	var newGroupHandler kafka.ConsumerGroupHandler
 
 	if len(c.consumerGroupMiddlewares) > 0 {
-		newGroupHandler = NewGroupHandlerWithConsumerGroupMiddleware(handler, c.logger, c.middlewares, c.consumerGroupMiddlewares)
+		newGroupHandler = newGroupHandlerWithConsumerGroupMiddleware(handler, c.logger, c.resilience, c.middlewares, c.consumerGroupMiddlewares)
 	} else {
-		newGroupHandler = NewGroupHandler(handler, c.logger, c.middlewares...)
+		newGroupHandler = NewGroupHandlerWithResilience(handler, c.logger, c.resilience, c.middlewares...)
 	}
 
 	for {

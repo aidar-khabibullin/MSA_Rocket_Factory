@@ -79,6 +79,8 @@ task down-all    # остановить и удалить контейнеры
 
 Архитектурные решения и известные ограничения: [docs/architecture.md](docs/architecture.md).
 
+Нагрузочный тест и трассировка: [docs/load-testing.md](docs/load-testing.md).
+
 ## Разработка
 
 Полный список команд: `task --list`.

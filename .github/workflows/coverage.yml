@@ -430,7 +430,7 @@ jobs:
         if: github.ref == 'refs/heads/main' && steps.verify-changed-files.outputs.files_changed == 'true'
         run: |
           for i in 1 2 3 4 5; do
-            git pull --rebase -X theirs origin ${{ github.ref_name }} && \
+            git pull --rebase --autostash -X theirs origin ${{ github.ref_name }} && \
             git push origin HEAD:${{ github.ref_name }} && exit 0
             echo "Push failed (attempt $i), retrying..."
             git rebase --abort 2>/dev/null || true

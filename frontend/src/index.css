@@ -1,0 +1,140 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+
+/* Тёмная тема в палитре Monokai Pro: тёплый серо-пурпурный фон, жёлтый акцент, цвета статусов из той же палитры. */
+html.dark,
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --background: oklch(0.265 0.008 330); /* ~#2D2A2E */
+  --foreground: oklch(0.985 0.003 100); /* ~#FCFCFA */
+  --surface: oklch(0.31 0.009 330);
+  --surface-foreground: oklch(0.985 0.003 100);
+  --overlay: oklch(0.355 0.008 330); /* ~#403E41 */
+  --muted: oklch(0.73 0.006 330); /* светлее «dimmed» #939293 из Monokai Pro, чтобы читался (контраст > 6:1) */
+  --border: oklch(0.41 0.008 330);
+  --separator: oklch(0.36 0.008 330);
+  /* Жёлтый Monokai Pro (~#FFD866): тёмный текст на нём даёт контраст около 10:1. */
+  --accent: oklch(0.88 0.13 90);
+  --accent-foreground: oklch(0.22 0.008 330);
+  /* Ошибка — красный Monokai Pro (~#FF6188) в приглушённом виде. */
+  --danger: oklch(0.72 0.16 12);
+  --danger-foreground: oklch(0.22 0.008 330);
+  --success: oklch(0.83 0.14 130); /* зелёный ~#A9DC76 */
+  --warning: oklch(0.79 0.12 50); /* оранжевый ~#FC9867 */
+  --glow-gold: oklch(0.88 0.13 90 / 0.05);
+  --glow-blue: oklch(0.72 0.1 290 / 0.07); /* фиолетовый ~#AB9DF2 */
+}
+
+/* Светлая тема в духе Monokai Pro Light: тёплый кремовый фон, графитовый текст, розово-малиновый акцент. */
+html.light,
+html[data-theme="light"] {
+  color-scheme: light;
+  --background: oklch(0.953 0.012 50);
+  --foreground: oklch(0.26 0.015 330);
+  --surface: oklch(0.984 0.006 50);
+  --surface-foreground: oklch(0.26 0.015 330);
+  --overlay: oklch(0.99 0.005 50);
+  --muted: oklch(0.48 0.022 330);
+  --border: oklch(0.86 0.016 50);
+  --separator: oklch(0.88 0.014 50);
+  /* Малиновый акцент: белый текст на нём даёт контраст около 5:1. */
+  --accent: oklch(0.56 0.19 6);
+  --accent-foreground: oklch(0.99 0.004 50);
+  /* Статусы из той же палитры: оранжево-красный, оранжевый и зелёный Monokai. */
+  --danger: oklch(0.54 0.16 38);
+  --danger-foreground: oklch(0.99 0.004 50);
+  --glow-gold: oklch(0.7 0.15 8 / 0.1);
+  --glow-blue: oklch(0.65 0.12 300 / 0.1);
+}
+
+/* В светлой теме карточкам нужна мягкая тень, иначе они сливаются с фоном. */
+html.light .bg-surface,
+html[data-theme="light"] .bg-surface {
+  box-shadow:
+    0 1px 2px oklch(0.3 0.03 330 / 0.07),
+    0 4px 14px -6px oklch(0.3 0.03 330 / 0.1);
+}
+
+:root {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  min-height: 100dvh;
+  background:
+    radial-gradient(60rem 30rem at 85% -10%, var(--glow-gold), transparent 60%),
+    radial-gradient(50rem 30rem at -10% 0%, var(--glow-blue), transparent 60%),
+    var(--background);
+  background-attachment: fixed;
+  color: var(--foreground);
+  transition: background-color 200ms ease-out, color 200ms ease-out;
+}
+
+/* Единый заметный фокус для клавиатуры. */
+/* Фокус для ссылок и кнопок без собственных стилей. Правило лежит в @layer base, поэтому стили фокуса
+   компонентов HeroUI (например, кольцо цвета ошибки на невалидном поле) его перекрывают. Правила вне
+   слоёв выигрывают у любого слоя независимо от специфичности, из-за чего контур рисовался поверх кольца. */
+@layer base {
+  :where(:focus-visible) {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+button,
+a,
+[role="button"],
+label[for],
+select {
+  cursor: pointer;
+}
+
+/* Плавность только на transform/opacity/цвет, 150–250 мс. */
+.lift {
+  transition:
+    transform 200ms ease-out,
+    border-color 200ms ease-out,
+    box-shadow 200ms ease-out;
+}
+.lift:hover {
+  transform: translateY(-2px);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 300ms ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .lift:hover {
+    transform: none;
+  }
+}
+
+/* В светлой теме статусные цвета текста темнее, иначе на кремовом не набирается контраст 4.5:1. */
+html.light .text-warning {
+  color: oklch(0.5 0.12 62);
+}
+html.light .text-success {
+  color: oklch(0.45 0.12 155);
+}
+html.light .text-danger {
+  color: oklch(0.5 0.15 38);
+}

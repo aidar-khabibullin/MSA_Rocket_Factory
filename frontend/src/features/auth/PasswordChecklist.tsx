@@ -1,0 +1,28 @@
+import Check from '@gravity-ui/icons/Check'
+
+import { PASSWORD_RULES } from './passwordRules'
+
+/** Чек-лист требований: статус передаётся иконкой и текстом для скринридера, а не только цветом. */
+export function PasswordChecklist({ value }: { value: string }) {
+  return (
+    <ul className="grid grid-cols-1 gap-x-4 gap-y-1.5 pt-1 text-xs sm:grid-cols-2" aria-label="Требования к паролю">
+      {PASSWORD_RULES.map((rule) => {
+        const done = rule.test(value)
+        return (
+          <li key={rule.id} className={`flex items-center gap-2 ${done ? 'text-success' : 'text-muted'}`}>
+            <span
+              className={`grid size-4 shrink-0 place-items-center rounded-full border transition-colors ${
+                done ? 'border-success bg-success text-background' : 'border-border'
+              }`}
+              aria-hidden="true"
+            >
+              {done ? <Check className="size-3" /> : null}
+            </span>
+            <span>{rule.label}</span>
+            <span className="sr-only">{done ? ': выполнено' : ': не выполнено'}</span>
+          </li>
+        )
+      })}
+    </ul>
+  )
+}

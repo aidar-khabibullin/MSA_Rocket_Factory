@@ -884,3 +884,41 @@ tasks:
     desc: "📊 Генерация тестовых данных для метрик"
     cmds:
       - ./scripts/generate_test_metrics.sh
+
+  frontend:install:
+    desc: "Устанавливает зависимости фронтенда (frontend/)"
+    dir: frontend
+    cmds:
+      - npm install
+
+  frontend:dev:
+    desc: "Запускает фронтенд на http://localhost:5173 (нужны bff и поднятый стек)"
+    dir: frontend
+    cmds:
+      - "[ -d node_modules ] || npm install"
+      - npm run dev
+
+  frontend:build:
+    desc: "Собирает фронтенд (typecheck + vite build)"
+    dir: frontend
+    cmds:
+      - "[ -d node_modules ] || npm install"
+      - npm run build
+
+  frontend:check:
+    desc: "Проверки фронтенда: типы, линтер (oxlint), тесты (vitest)"
+    dir: frontend
+    cmds:
+      - "[ -d node_modules ] || npm install"
+      - npm run typecheck
+      - npm run lint
+      - npm run test
+
+  bff:run:
+    desc: "Запускает BFF на :8095 (HTTP-шлюз к iam и inventory для фронтенда)"
+    cmds:
+      - go run ./bff
+
+  web:
+    desc: "Запускает BFF и фронтенд вместе (Ctrl+C останавливает оба)"
+    deps: [ bff:run, frontend:dev ]

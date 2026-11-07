@@ -52,7 +52,7 @@ func TestAPI_PayOrder_Success(t *testing.T) {
 		Once()
 
 	// Act
-	res, err := api.PayOrder(context.Background(), req, params)
+	res, err := api.PayOrder(expectOwnedOrder(mockService, params.OrderUUID), req, params)
 
 	// Assert
 	assert.NoError(t, err)
@@ -107,7 +107,7 @@ func TestAPI_PayOrder_OrderNotFound(t *testing.T) {
 		Once()
 
 	// Act
-	res, err := api.PayOrder(context.Background(), req, params)
+	res, err := api.PayOrder(expectOwnedOrder(mockService, params.OrderUUID), req, params)
 
 	// Assert
 	assert.NoError(t, err)
@@ -139,7 +139,7 @@ func TestAPI_PayOrder_ConvertFromRepoError(t *testing.T) {
 		Once()
 
 	// Act
-	res, err := api.PayOrder(context.Background(), req, params)
+	res, err := api.PayOrder(expectOwnedOrder(mockService, params.OrderUUID), req, params)
 
 	// Assert
 	assert.NoError(t, err)
@@ -171,7 +171,7 @@ func TestAPI_PayOrder_ConvertFromClientError(t *testing.T) {
 		Once()
 
 	// Act
-	res, err := api.PayOrder(context.Background(), req, params)
+	res, err := api.PayOrder(expectOwnedOrder(mockService, params.OrderUUID), req, params)
 
 	// Assert
 	assert.NoError(t, err)
@@ -203,7 +203,7 @@ func TestAPI_PayOrder_PaymentClientError(t *testing.T) {
 		Once()
 
 	// Act
-	res, err := api.PayOrder(context.Background(), req, params)
+	res, err := api.PayOrder(expectOwnedOrder(mockService, params.OrderUUID), req, params)
 
 	// Assert
 	assert.NoError(t, err)
@@ -270,7 +270,7 @@ func TestAPI_PayOrder_DifferentPaymentMethods(t *testing.T) {
 				Once()
 
 			// Act
-			res, err := api.PayOrder(context.Background(), req, params)
+			res, err := api.PayOrder(expectOwnedOrder(mockService, params.OrderUUID), req, params)
 
 			// Assert
 			assert.NoError(t, err)
@@ -352,7 +352,7 @@ func TestAPI_PayOrder_TableDriven(t *testing.T) {
 			}
 
 			// Act
-			res, err := api.PayOrder(context.Background(), req, params)
+			res, err := api.PayOrder(expectOwnedOrder(mockService, params.OrderUUID), req, params)
 
 			// Assert
 			if tt.expectError {

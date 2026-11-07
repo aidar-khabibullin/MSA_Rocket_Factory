@@ -38,6 +38,16 @@ func (s service) PayOrder(ctx context.Context, order *model.Order) (*model.Order
 	}
 	span.AddEvent("order fetched successfully")
 
+	// Оплатить можно только заказ, ожидающий оплаты: иначе возможны повторные платежи
+	// и оплата отменённых заказов (с повторной публикацией события order.paid)
+	if dbOrder.Status != model.StatusPendingPayment {
+		err := fmt.Errorf("service: order %s has status %s: %w", dbOrder.OrderUUID, dbOrder.Status, model.ErrOrderNotPayable)
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		span.End()
+		return nil, err
+	}
+
 	// Устанавливаем метод оплаты из запроса
 	dbOrder.PaymentMethod = order.PaymentMethod
 

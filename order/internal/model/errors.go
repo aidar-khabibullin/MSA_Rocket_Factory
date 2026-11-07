@@ -12,6 +12,7 @@ var (
 	ErrCancelled           = errors.New("order status is cancelled")
 	ErrPartsSpecified      = errors.New("parts not specified")
 	ErrOrderNotFound       = errors.New("order not found")
+	ErrOrderNotPayable     = errors.New("order is not payable in its current status")
 	ErrFailedToBuildQuery  = errors.New("failed to build query")
 	ErrFailedToInsertOrder = errors.New("failed to insert order")
 	ErrFailedToUpdateOrder = errors.New("failed to update order")

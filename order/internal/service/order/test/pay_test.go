@@ -349,3 +349,34 @@ func (s *ServiceSuite) TestPayOrder_EventPaymentMethodPropagation() {
 	s.orderRepository.AssertExpectations(s.T())
 	s.paymentClient.AssertExpectations(s.T())
 }
+
+// Регрессия: оплатить можно только заказ в статусе PENDING_PAYMENT. Раньше оплата оплаченного,
+// отменённого или уже собранного заказа создавала новый платёж и повторное событие order.paid.
+func (s *ServiceSuite) TestPayOrder_NotPendingPaymentIsRejected() {
+	statuses := []model.OrderStatus{model.StatusPaid, model.StatusCancelled, model.StatusAssembled}
+
+	for _, status := range statuses {
+		s.Run(string(status), func() {
+			s.SetupTest()
+			s.orderPaidProducer.lastEvent = nil
+
+			orderUUID := uuid.New()
+			s.orderRepository.On("GetOrder", mock.Anything, orderUUID).
+				Return(&model.Order{
+					OrderUUID: orderUUID,
+					UserUUID:  uuid.New(),
+					Status:    status,
+				}, nil)
+			// CreatePayment и UpdateOrder не мокаются: любой их вызов уронит тест
+
+			result, err := s.service.PayOrder(context.Background(), &model.Order{
+				OrderUUID:     orderUUID,
+				PaymentMethod: "CARD",
+			})
+
+			s.Require().Nil(result)
+			s.Require().ErrorIs(err, model.ErrOrderNotPayable)
+			s.Require().Nil(s.orderPaidProducer.lastEvent, "событие order.paid публиковаться не должно")
+		})
+	}
+}

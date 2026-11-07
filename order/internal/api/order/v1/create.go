@@ -27,8 +27,36 @@ func (a *api) CreateOrder(ctx context.Context, req *orderV1.CreateOrderRequest) 
 
 	logger.Info(ctx, "✅ CreateOrder: orderService доступен, продолжаем")
 
+	// Владелец заказа определяется только по сессии: user_uuid из тела запроса клиенту доверять нельзя,
+	// иначе любой авторизованный пользователь мог бы создавать заказы от имени другого.
+	userUUID, err := sessionUserUUID(ctx)
+	if err != nil {
+		if errors.Is(err, errUnauthenticated) {
+			logger.Warn(ctx, "🚫 CreateOrder: в контексте нет аутентифицированного пользователя")
+			return &orderV1.UnauthorizedError{
+				Code:    http.StatusUnauthorized,
+				Message: "authentication required",
+			}, nil
+		}
+
+		return &orderV1.InternalServerError{
+			Code:    http.StatusInternalServerError,
+			Message: "invalid session user",
+		}, nil
+	}
+
+	if requested := uuid.UUID(req.UserUUID); requested != uuid.Nil && requested != userUUID {
+		logger.Warn(ctx, "🚫 CreateOrder: попытка создать заказ от имени другого пользователя",
+			zap.String("session_user_uuid", userUUID.String()),
+			zap.String("requested_user_uuid", requested.String()))
+		return &orderV1.ForbiddenError{
+			Code:    http.StatusForbidden,
+			Message: "cannot create order for another user",
+		}, nil
+	}
+
 	orderDraft := model.Order{
-		UserUUID:  uuid.UUID(req.UserUUID),
+		UserUUID:  userUUID,
 		PartUUIDs: req.PartUuids,
 	}
 

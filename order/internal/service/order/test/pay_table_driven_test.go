@@ -517,14 +517,12 @@ func (s *ServiceSuite) TestPayOrder_EdgeCases() {
 
 				s.orderRepository.On("GetOrder", mock.Anything, order.OrderUUID).
 					Return(dbOrder, nil)
-				// Добавляем мок для CreatePayment, который может вызываться
-				s.paymentClient.On("CreatePayment", mock.Anything, mock.AnythingOfType("*model.Order")).
-					Return(nil, errors.New("order already paid")).Maybe()
+				// CreatePayment не мокается намеренно: платёж для оплаченного заказа создаваться не должен
 			},
 			validate: func(t *testing.T, result *model.Order, err error) {
 				require.Error(t, err)
 				require.Nil(t, result)
-				require.Contains(t, err.Error(), "order already paid")
+				require.ErrorIs(t, err, model.ErrOrderNotPayable)
 			},
 		},
 	}

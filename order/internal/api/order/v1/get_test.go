@@ -49,7 +49,7 @@ func TestAPI_GetOrderByUUID_Success(t *testing.T) {
 		Once()
 
 	// Act
-	res, err := api.GetOrderByUUID(context.Background(), params)
+	res, err := api.GetOrderByUUID(authedCtx(userUUID), params)
 
 	// Assert
 	assert.NoError(t, err)
@@ -108,7 +108,7 @@ func TestAPI_GetOrderByUUID_OrderNotFound(t *testing.T) {
 		Once()
 
 	// Act
-	res, err := api.GetOrderByUUID(context.Background(), params)
+	res, err := api.GetOrderByUUID(authedCtx(uuid.New()), params)
 
 	// Assert
 	assert.NoError(t, err)
@@ -138,7 +138,7 @@ func TestAPI_GetOrderByUUID_ConvertFromRepoError(t *testing.T) {
 		Once()
 
 	// Act
-	res, err := api.GetOrderByUUID(context.Background(), params)
+	res, err := api.GetOrderByUUID(authedCtx(uuid.New()), params)
 
 	// Assert
 	assert.NoError(t, err)
@@ -191,9 +191,10 @@ func TestAPI_GetOrderByUUID_DifferentStatuses(t *testing.T) {
 				OrderUUID: orderUUID,
 			}
 
+			ownerUUID := uuid.New()
 			expectedOrder := &model.Order{
 				OrderUUID:       orderUUID,
-				UserUUID:        uuid.New(),
+				UserUUID:        ownerUUID,
 				Status:          model.OrderStatus(tt.orderStatus),
 				PaymentMethod:   tt.paymentMethod,
 				TotalPrice:      1000.0,
@@ -206,7 +207,7 @@ func TestAPI_GetOrderByUUID_DifferentStatuses(t *testing.T) {
 				Once()
 
 			// Act
-			res, err := api.GetOrderByUUID(context.Background(), params)
+			res, err := api.GetOrderByUUID(authedCtx(ownerUUID), params)
 
 			// Assert
 			assert.NoError(t, err)
@@ -220,6 +221,9 @@ func TestAPI_GetOrderByUUID_DifferentStatuses(t *testing.T) {
 		})
 	}
 }
+
+// tableTestOwner - владелец заказов в табличном тесте (мок и контекст должны указывать на одного пользователя)
+var tableTestOwner = uuid.New()
 
 func TestAPI_GetOrderByUUID_TableDriven(t *testing.T) {
 	tests := []struct {
@@ -236,7 +240,7 @@ func TestAPI_GetOrderByUUID_TableDriven(t *testing.T) {
 					GetOrder(mock.Anything, orderUUID).
 					Return(&model.Order{
 						OrderUUID:  orderUUID,
-						UserUUID:   uuid.New(),
+						UserUUID:   tableTestOwner,
 						Status:     "PAID",
 						TotalPrice: 1000.0,
 					}, nil).
@@ -284,7 +288,7 @@ func TestAPI_GetOrderByUUID_TableDriven(t *testing.T) {
 			}
 
 			// Act
-			res, err := api.GetOrderByUUID(context.Background(), params)
+			res, err := api.GetOrderByUUID(authedCtx(tableTestOwner), params)
 
 			// Assert
 			if tt.expectError {

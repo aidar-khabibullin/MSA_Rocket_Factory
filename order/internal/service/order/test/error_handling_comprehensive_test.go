@@ -282,13 +282,11 @@ func (s *ServiceSuite) TestPayOrder_ComprehensiveErrorHandling() {
 					Build()
 				s.orderRepository.On("GetOrder", mock.Anything, orderUUID).
 					Return(dbOrder, nil)
-				// Добавляем мок для CreatePayment, который может вызываться
-				s.paymentClient.On("CreatePayment", mock.Anything, mock.AnythingOfType("*model.Order")).
-					Return(nil, errors.New("order already paid")).Maybe()
+				// CreatePayment не мокается намеренно: платёж для оплаченного заказа создаваться не должен
 			},
 			validateError: func(t *testing.T, err error) {
 				require.Error(t, err)
-				require.Contains(t, err.Error(), "order already paid")
+				require.ErrorIs(t, err, model.ErrOrderNotPayable)
 			},
 			description: "Тестирование повторной оплаты уже оплаченного заказа",
 		},

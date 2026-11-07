@@ -14,8 +14,6 @@
 
 Проект: микросервисная система «Фабрика ракет» на Go (монорепозиторий с go.work).
 
-Курс: https://olezhek28.courses/microservices
-
 ![схема](docs/logo.png)
 
 ## Сервисы

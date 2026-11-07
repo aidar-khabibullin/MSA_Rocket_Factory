@@ -58,6 +58,9 @@ func (s *service) Login(ctx context.Context, login, password string) (*model.Ses
 	// Получаем пользователя по логину
 	user, err := s.iamRepository.GetUserByLogin(ctx, login)
 	if err != nil {
+		// Тратим столько же времени, сколько на проверку пароля, чтобы по времени ответа
+		// нельзя было отличить несуществующий логин от неверного пароля
+		s.burnPasswordCheck(password)
 		logger.Warn(ctx, "🚫 Неудачная попытка входа: пользователь не найден", zap.String("login", login))
 		return nil, model.ErrInvalidCredentials
 	}
@@ -165,6 +168,17 @@ func (s *service) Logout(ctx context.Context, sessionUUID uuid.UUID) error {
 	return nil
 }
 
+// dummyPasswordHash - валидный Argon2id-хэш с теми же параметрами, что и у реальных пользователей
+// (m=65536,t=1,p=4, соль 16 байт, ключ 32 байта). Не соответствует никакому реальному паролю.
+const dummyPasswordHash = "$argon2id$v=19$m=65536,t=1,p=4$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" //nolint:gosec // фиктивный хэш для выравнивания времени ответа, не учётные данные
+
+// burnPasswordCheck выполняет проверку пароля против фиктивного хэша и игнорирует результат.
+// Нужна для выравнивания времени ответа, когда пользователь не найден.
+func (s *service) burnPasswordCheck(password string) {
+	//nolint:errcheck,gosec // результат намеренно игнорируется: важна только затраченная работа
+	s.verifyPassword(password, dummyPasswordHash)
+}
+
 // verifyPassword проверяет пароль против хэша
 func (s *service) verifyPassword(password, encodedHash string) (bool, error) {
 	// Парсим хэш
@@ -216,6 +230,7 @@ func (s *service) JWTLogin(ctx context.Context, login, password string) (*model.
 	// Получаем пользователя по логину
 	user, err := s.iamRepository.GetUserByLogin(ctx, login)
 	if err != nil {
+		s.burnPasswordCheck(password)
 		logger.Warn(ctx, "🚫 JWT: Неудачная попытка входа: пользователь не найден", zap.String("login", login))
 		return nil, model.ErrInvalidCredentials
 	}

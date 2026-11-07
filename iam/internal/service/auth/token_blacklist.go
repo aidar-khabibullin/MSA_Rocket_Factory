@@ -55,15 +55,15 @@ func (tbs *TokenBlacklistService) RevokeToken(ctx context.Context, tokenString s
 		return nil
 	}
 
-	// Создаем хэш токена для экономии места
-	tokenHash := tbs.hashToken(tokenString)
+	// Создаем ключ токена (UUID из первых 16 байт SHA-256) для экономии места
+	tokenKey := tbs.tokenKey(tokenString)
 
 	// TTL = время до истечения токена
 	ttl := expiresAt.Sub(now)
 
 	// Создаем фейковую сессию для записи в blacklist
 	blacklistEntry := &model.Session{
-		UUID:      uuid.MustParse(tokenHash),
+		UUID:      tokenKey,
 		UserUUID:  uuid.New(), // не важно для blacklist
 		CreatedAt: now,
 		UpdatedAt: now,
@@ -71,22 +71,22 @@ func (tbs *TokenBlacklistService) RevokeToken(ctx context.Context, tokenString s
 	}
 
 	// Добавляем токен в blacklist с TTL
-	err = tbs.cacheRepo.Set(ctx, uuid.MustParse(tokenHash), blacklistEntry, ttl)
+	err = tbs.cacheRepo.Set(ctx, tokenKey, blacklistEntry, ttl)
 	if err != nil {
 		logger.Error(ctx, "Ошибка добавления токена в blacklist", zap.Error(err))
 		return fmt.Errorf("не удалось отозвать токен: %w", err)
 	}
 
-	logger.Info(ctx, "✅ Токен добавлен в blacklist", zap.String("token_hash", tokenHash))
+	logger.Info(ctx, "✅ Токен добавлен в blacklist", zap.String("token_key", tokenKey.String()))
 	return nil
 }
 
 // IsTokenRevoked проверяет, находится ли токен в blacklist
 func (tbs *TokenBlacklistService) IsTokenRevoked(ctx context.Context, tokenString string) bool {
-	tokenHash := tbs.hashToken(tokenString)
+	tokenKey := tbs.tokenKey(tokenString)
 
-	// Пытаемся получить сессию из кеша по хэшу токена
-	session, err := tbs.cacheRepo.GetSessionByUUID(ctx, uuid.MustParse(tokenHash))
+	// Пытаемся получить сессию из кеша по ключу токена
+	session, err := tbs.cacheRepo.GetSessionByUUID(ctx, tokenKey)
 
 	// Если токен найден в blacklist - он отозван
 	return err == nil && session != nil
@@ -126,8 +126,11 @@ func (tbs *TokenBlacklistService) IsUserTokensRevoked(ctx context.Context, userU
 	return false
 }
 
-// hashToken создает SHA256 хэш токена для использования в качестве ключа
-func (tbs *TokenBlacklistService) hashToken(tokenString string) string {
+// tokenKey создает детерминированный UUID из SHA256 хэша токена для использования в качестве ключа кеша.
+// SHA256 дает 32 байта, а UUID вмещает 16, поэтому берем первые 16 байт.
+func (tbs *TokenBlacklistService) tokenKey(tokenString string) uuid.UUID {
 	hash := sha256.Sum256([]byte(tokenString))
-	return fmt.Sprintf("%x", hash)
+	var key uuid.UUID
+	copy(key[:], hash[:len(key)])
+	return key
 }

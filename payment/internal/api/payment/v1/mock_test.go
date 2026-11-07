@@ -21,3 +21,11 @@ func (m *MockPaymentService) Pay(ctx context.Context, order model.Order) (uuid.U
 	}
 	return args.Get(0).(uuid.UUID), args.Error(1)
 }
+
+func (m *MockPaymentService) Refund(ctx context.Context, orderUUID, transactionUUID uuid.UUID) (uuid.UUID, error) {
+	args := m.Called(ctx, orderUUID, transactionUUID)
+	if args.Get(0) == nil {
+		return uuid.Nil, args.Error(1)
+	}
+	return args.Get(0).(uuid.UUID), args.Error(1)
+}

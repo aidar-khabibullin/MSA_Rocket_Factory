@@ -21,7 +21,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	PaymentService_PayOrder_FullMethodName = "/payment.v1.PaymentService/PayOrder"
+	PaymentService_PayOrder_FullMethodName    = "/payment.v1.PaymentService/PayOrder"
+	PaymentService_RefundOrder_FullMethodName = "/payment.v1.PaymentService/RefundOrder"
 )
 
 // PaymentServiceClient is the client API for PaymentService service.
@@ -30,8 +31,12 @@ const (
 //
 // PaymentService предоставляет API для оплаты заказов
 type PaymentServiceClient interface {
-	// PayOrder оплачивает заказ
+	// PayOrder оплачивает заказ. Операция идемпотентна по order_uuid: повторный вызов для того же заказа
+	// возвращает ту же транзакцию и не списывает деньги второй раз.
 	PayOrder(ctx context.Context, in *PayOrderRequest, opts ...grpc.CallOption) (*PayOrderResponse, error)
+	// RefundOrder возвращает деньги за оплаченный заказ (компенсация, если заказ не удалось обновить после оплаты).
+	// Операция идемпотентна: повторный возврат той же транзакции возвращает тот же refund_uuid.
+	RefundOrder(ctx context.Context, in *RefundOrderRequest, opts ...grpc.CallOption) (*RefundOrderResponse, error)
 }
 
 type paymentServiceClient struct {
@@ -52,14 +57,28 @@ func (c *paymentServiceClient) PayOrder(ctx context.Context, in *PayOrderRequest
 	return out, nil
 }
 
+func (c *paymentServiceClient) RefundOrder(ctx context.Context, in *RefundOrderRequest, opts ...grpc.CallOption) (*RefundOrderResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RefundOrderResponse)
+	err := c.cc.Invoke(ctx, PaymentService_RefundOrder_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PaymentServiceServer is the server API for PaymentService service.
 // All implementations must embed UnimplementedPaymentServiceServer
 // for forward compatibility.
 //
 // PaymentService предоставляет API для оплаты заказов
 type PaymentServiceServer interface {
-	// PayOrder оплачивает заказ
+	// PayOrder оплачивает заказ. Операция идемпотентна по order_uuid: повторный вызов для того же заказа
+	// возвращает ту же транзакцию и не списывает деньги второй раз.
 	PayOrder(context.Context, *PayOrderRequest) (*PayOrderResponse, error)
+	// RefundOrder возвращает деньги за оплаченный заказ (компенсация, если заказ не удалось обновить после оплаты).
+	// Операция идемпотентна: повторный возврат той же транзакции возвращает тот же refund_uuid.
+	RefundOrder(context.Context, *RefundOrderRequest) (*RefundOrderResponse, error)
 	mustEmbedUnimplementedPaymentServiceServer()
 }
 
@@ -72,6 +91,9 @@ type UnimplementedPaymentServiceServer struct{}
 
 func (UnimplementedPaymentServiceServer) PayOrder(context.Context, *PayOrderRequest) (*PayOrderResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PayOrder not implemented")
+}
+func (UnimplementedPaymentServiceServer) RefundOrder(context.Context, *RefundOrderRequest) (*RefundOrderResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RefundOrder not implemented")
 }
 func (UnimplementedPaymentServiceServer) mustEmbedUnimplementedPaymentServiceServer() {}
 func (UnimplementedPaymentServiceServer) testEmbeddedByValue()                        {}
@@ -112,6 +134,24 @@ func _PaymentService_PayOrder_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PaymentService_RefundOrder_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RefundOrderRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PaymentServiceServer).RefundOrder(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PaymentService_RefundOrder_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PaymentServiceServer).RefundOrder(ctx, req.(*RefundOrderRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PaymentService_ServiceDesc is the grpc.ServiceDesc for PaymentService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -122,6 +162,10 @@ var PaymentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "PayOrder",
 			Handler:    _PaymentService_PayOrder_Handler,
+		},
+		{
+			MethodName: "RefundOrder",
+			Handler:    _PaymentService_RefundOrder_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

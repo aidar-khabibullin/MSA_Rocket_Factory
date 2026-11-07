@@ -10,8 +10,10 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/model"
+	"github.com/aidar-khabibullin/MSA_Rocket_Factory/platform/pkg/logger"
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/platform/pkg/tracing"
 )
 
@@ -70,7 +72,12 @@ func (s service) PayOrder(ctx context.Context, order *model.Order) (*model.Order
 	// Условный UPDATE: если параллельный запрос уже изменил статус, не публикуем повторное событие
 	updatedOrder, err := s.orderRepository.UpdateOrderIfStatus(ctx, paidOrder, model.StatusPendingPayment)
 	if errors.Is(err, model.ErrOrderStatusChanged) {
+		// Параллельный запрос уже оплатил заказ: платёж по заказу идемпотентен, транзакция у обоих одна,
+		// поэтому возвращать деньги нельзя, они принадлежат победившему запросу.
 		err = fmt.Errorf("service: order %s changed status during payment: %w", dbOrder.OrderUUID, model.ErrOrderNotPayable)
+	} else if err != nil {
+		// Деньги списаны, а заказ не обновлён: компенсируем, иначе клиент заплатил бы за заказ в PENDING_PAYMENT.
+		s.compensatePayment(ctx, paidOrder)
 	}
 	if err != nil {
 		span.RecordError(err)
@@ -108,4 +115,22 @@ func (s service) PayOrder(ctx context.Context, order *model.Order) (*model.Order
 
 	span.SetStatus(codes.Ok, "order paid successfully")
 	return updatedOrder, nil
+}
+
+// compensatePayment возвращает платёж, не удавшийся довести до записи в заказе. Ошибка возврата не маскирует
+// исходную: она логируется, а возврат повторяется оператором или повторной оплатой (идемпотентно).
+func (s service) compensatePayment(ctx context.Context, paidOrder *model.Order) {
+	if err := s.paymentClient.RefundPayment(ctx, paidOrder); err != nil {
+		logger.Error(ctx, "Failed to refund payment after order update failure; manual refund required",
+			zap.Error(err),
+			zap.String("order_uuid", paidOrder.OrderUUID.String()),
+			zap.String("transaction_uuid", paidOrder.TransactionUUID.String()),
+		)
+		return
+	}
+
+	logger.Warn(ctx, "Payment refunded after order update failure",
+		zap.String("order_uuid", paidOrder.OrderUUID.String()),
+		zap.String("transaction_uuid", paidOrder.TransactionUUID.String()),
+	)
 }

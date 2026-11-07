@@ -22,6 +22,8 @@ func NewRepository(ctx context.Context, database *mongo.Database) def.InventoryR
 		db: database,
 	}
 
+	repo.ensureReservationIndex(ctx)
+
 	// Добавляем тестовые данные при инициализации
 	if err := repo.AddTestData(ctx); err != nil {
 		log.Printf("Предупреждение: не удалось добавить тестовые данные в MongoDB: %v", err)

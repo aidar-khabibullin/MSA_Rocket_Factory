@@ -73,20 +73,18 @@ func (s *ServiceSuite) TestPayWithContext() {
 }
 
 func (s *ServiceSuite) TestPayGeneratesUniqueUUIDs() {
-	// Проверяем, что каждый вызов генерирует уникальный UUID
-	order := model.Order{
-		OrderUuid:     uuid.New(),
-		UserUuid:      uuid.New(),
-		PaymentMethod: "CARD",
-		TransactionId: uuid.Nil,
+	// Каждый заказ получает свою транзакцию. Повторная оплата одного заказа возвращает ту же транзакцию
+	// (идемпотентность), это проверяет TestPay_IsIdempotentPerOrder.
+	newOrder := func() model.Order {
+		return model.Order{OrderUuid: uuid.New(), UserUuid: uuid.New(), PaymentMethod: "CARD", TransactionId: uuid.Nil}
 	}
 
-	uuid1, err1 := s.service.Pay(context.Background(), order)
-	uuid2, err2 := s.service.Pay(context.Background(), order)
+	uuid1, err1 := s.service.Pay(context.Background(), newOrder())
+	uuid2, err2 := s.service.Pay(context.Background(), newOrder())
 
 	assert.NoError(s.T(), err1)
 	assert.NoError(s.T(), err2)
-	assert.NotEqual(s.T(), uuid1, uuid2) // UUID должны быть разными
+	assert.NotEqual(s.T(), uuid1, uuid2)
 }
 
 func (s *ServiceSuite) TestPayWithNilContext() {

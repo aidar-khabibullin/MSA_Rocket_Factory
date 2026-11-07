@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 
 	clientMocks "github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/client/grpc/mocks"
@@ -11,6 +12,7 @@ import (
 	repoMocks "github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/repository/mocks"
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/service"
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/service/order"
+	"github.com/aidar-khabibullin/MSA_Rocket_Factory/platform/pkg/logger"
 )
 
 type ServiceSuite struct {
@@ -23,6 +25,9 @@ type ServiceSuite struct {
 }
 
 func (s *ServiceSuite) SetupSuite() {
+	// Сервис пишет в глобальный логгер, в тестах его нужно инициализировать.
+	s.Require().NoError(logger.InitSimple("info", false))
+
 	s.orderRepository = repoMocks.NewOrderRepository(s.T())
 	s.inventoryClient = clientMocks.NewInventoryClient(s.T())
 	s.paymentClient = clientMocks.NewPaymentClient(s.T())
@@ -44,6 +49,9 @@ func (s *ServiceSuite) SetupTest() {
 	s.inventoryClient.ExpectedCalls = nil
 	s.paymentClient.ExpectedCalls = nil
 	s.orderPaidProducer.lastEvent = nil
+	// По умолчанию резерв деталей проходит и снимается успешно; тесты остатков переопределяют это поведение.
+	s.inventoryClient.On("ReserveParts", mock.Anything, mock.Anything, mock.Anything).Return(nil).Maybe()
+	s.inventoryClient.On("ReleaseParts", mock.Anything, mock.Anything).Return(nil).Maybe()
 }
 
 func (s *ServiceSuite) TearDownSuite() {

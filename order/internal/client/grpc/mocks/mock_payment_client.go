@@ -56,6 +56,17 @@ func (_m *PaymentClient) CreatePayment(ctx context.Context, order *model.Order) 
 	return r0, r1
 }
 
+// RefundPayment provides a mock function with given fields: ctx, order
+func (_m *PaymentClient) RefundPayment(ctx context.Context, order *model.Order) error {
+	ret := _m.Called(ctx, order)
+
+	if len(ret) == 0 {
+		panic("no return value specified for RefundPayment")
+	}
+
+	return ret.Error(0)
+}
+
 // PaymentClient_CreatePayment_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreatePayment'
 type PaymentClient_CreatePayment_Call struct {
 	*mock.Call

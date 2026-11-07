@@ -35,6 +35,418 @@ var (
 	_ = sort.Sort
 )
 
+// Validate checks the field values on ReservePartsRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ReservePartsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ReservePartsRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ReservePartsRequestMultiError, or nil if none found.
+func (m *ReservePartsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ReservePartsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for OrderUuid
+
+	if len(errors) > 0 {
+		return ReservePartsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ReservePartsRequestMultiError is an error wrapping multiple validation
+// errors returned by ReservePartsRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ReservePartsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ReservePartsRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ReservePartsRequestMultiError) AllErrors() []error { return m }
+
+// ReservePartsRequestValidationError is the validation error returned by
+// ReservePartsRequest.Validate if the designated constraints aren't met.
+type ReservePartsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ReservePartsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ReservePartsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ReservePartsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ReservePartsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ReservePartsRequestValidationError) ErrorName() string {
+	return "ReservePartsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ReservePartsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sReservePartsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ReservePartsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ReservePartsRequestValidationError{}
+
+// Validate checks the field values on ReservePartsResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ReservePartsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ReservePartsResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ReservePartsResponseMultiError, or nil if none found.
+func (m *ReservePartsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ReservePartsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ReservePartsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ReservePartsResponseMultiError is an error wrapping multiple validation
+// errors returned by ReservePartsResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ReservePartsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ReservePartsResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ReservePartsResponseMultiError) AllErrors() []error { return m }
+
+// ReservePartsResponseValidationError is the validation error returned by
+// ReservePartsResponse.Validate if the designated constraints aren't met.
+type ReservePartsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ReservePartsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ReservePartsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ReservePartsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ReservePartsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ReservePartsResponseValidationError) ErrorName() string {
+	return "ReservePartsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ReservePartsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sReservePartsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ReservePartsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ReservePartsResponseValidationError{}
+
+// Validate checks the field values on ReleasePartsRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ReleasePartsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ReleasePartsRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ReleasePartsRequestMultiError, or nil if none found.
+func (m *ReleasePartsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ReleasePartsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for OrderUuid
+
+	if len(errors) > 0 {
+		return ReleasePartsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ReleasePartsRequestMultiError is an error wrapping multiple validation
+// errors returned by ReleasePartsRequest.ValidateAll() if the designated
+// constraints aren't met.
+type ReleasePartsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ReleasePartsRequestMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ReleasePartsRequestMultiError) AllErrors() []error { return m }
+
+// ReleasePartsRequestValidationError is the validation error returned by
+// ReleasePartsRequest.Validate if the designated constraints aren't met.
+type ReleasePartsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ReleasePartsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ReleasePartsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ReleasePartsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ReleasePartsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ReleasePartsRequestValidationError) ErrorName() string {
+	return "ReleasePartsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ReleasePartsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sReleasePartsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ReleasePartsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ReleasePartsRequestValidationError{}
+
+// Validate checks the field values on ReleasePartsResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ReleasePartsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ReleasePartsResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ReleasePartsResponseMultiError, or nil if none found.
+func (m *ReleasePartsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ReleasePartsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ReleasePartsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ReleasePartsResponseMultiError is an error wrapping multiple validation
+// errors returned by ReleasePartsResponse.ValidateAll() if the designated
+// constraints aren't met.
+type ReleasePartsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ReleasePartsResponseMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ReleasePartsResponseMultiError) AllErrors() []error { return m }
+
+// ReleasePartsResponseValidationError is the validation error returned by
+// ReleasePartsResponse.Validate if the designated constraints aren't met.
+type ReleasePartsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ReleasePartsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ReleasePartsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ReleasePartsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ReleasePartsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ReleasePartsResponseValidationError) ErrorName() string {
+	return "ReleasePartsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ReleasePartsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sReleasePartsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ReleasePartsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ReleasePartsResponseValidationError{}
+
 // Validate checks the field values on GetPartRequest with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.

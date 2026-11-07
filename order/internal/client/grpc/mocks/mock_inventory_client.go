@@ -10,6 +10,8 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
+	uuid "github.com/google/uuid"
+
 	model "github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/model"
 )
 
@@ -54,6 +56,28 @@ func (_m *InventoryClient) ListParts(ctx context.Context, filter *model.Filter) 
 	}
 
 	return r0, r1
+}
+
+// ReserveParts provides a mock function with given fields: ctx, orderUUID, partUUIDs
+func (_m *InventoryClient) ReserveParts(ctx context.Context, orderUUID uuid.UUID, partUUIDs []uuid.UUID) error {
+	ret := _m.Called(ctx, orderUUID, partUUIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ReserveParts")
+	}
+
+	return ret.Error(0)
+}
+
+// ReleaseParts provides a mock function with given fields: ctx, orderUUID
+func (_m *InventoryClient) ReleaseParts(ctx context.Context, orderUUID uuid.UUID) error {
+	ret := _m.Called(ctx, orderUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ReleaseParts")
+	}
+
+	return ret.Error(0)
 }
 
 // InventoryClient_ListParts_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'ListParts'

@@ -195,6 +195,107 @@ func (x *PayOrderResponse) GetTransactionUuid() string {
 	return ""
 }
 
+// RefundOrderRequest запрашивает возврат платежа
+type RefundOrderRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// order_uuid уникальный идентификатор заказа
+	OrderUuid string `protobuf:"bytes,1,opt,name=order_uuid,json=orderUuid,proto3" json:"order_uuid,omitempty"`
+	// transaction_uuid транзакция, которую нужно вернуть
+	TransactionUuid string `protobuf:"bytes,2,opt,name=transaction_uuid,json=transactionUuid,proto3" json:"transaction_uuid,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *RefundOrderRequest) Reset() {
+	*x = RefundOrderRequest{}
+	mi := &file_payment_v1_payment_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RefundOrderRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RefundOrderRequest) ProtoMessage() {}
+
+func (x *RefundOrderRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_v1_payment_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RefundOrderRequest.ProtoReflect.Descriptor instead.
+func (*RefundOrderRequest) Descriptor() ([]byte, []int) {
+	return file_payment_v1_payment_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *RefundOrderRequest) GetOrderUuid() string {
+	if x != nil {
+		return x.OrderUuid
+	}
+	return ""
+}
+
+func (x *RefundOrderRequest) GetTransactionUuid() string {
+	if x != nil {
+		return x.TransactionUuid
+	}
+	return ""
+}
+
+// RefundOrderResponse подтверждает возврат платежа
+type RefundOrderResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// refund_uuid уникальный идентификатор возврата
+	RefundUuid    string `protobuf:"bytes,1,opt,name=refund_uuid,json=refundUuid,proto3" json:"refund_uuid,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RefundOrderResponse) Reset() {
+	*x = RefundOrderResponse{}
+	mi := &file_payment_v1_payment_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RefundOrderResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RefundOrderResponse) ProtoMessage() {}
+
+func (x *RefundOrderResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_payment_v1_payment_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RefundOrderResponse.ProtoReflect.Descriptor instead.
+func (*RefundOrderResponse) Descriptor() ([]byte, []int) {
+	return file_payment_v1_payment_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *RefundOrderResponse) GetRefundUuid() string {
+	if x != nil {
+		return x.RefundUuid
+	}
+	return ""
+}
+
 var File_payment_v1_payment_proto protoreflect.FileDescriptor
 
 const file_payment_v1_payment_proto_rawDesc = "" +
@@ -207,15 +308,23 @@ const file_payment_v1_payment_proto_rawDesc = "" +
 	"\tuser_uuid\x18\x02 \x01(\tR\buserUuid\x12@\n" +
 	"\x0epayment_method\x18\x03 \x01(\x0e2\x19.payment.v1.PaymentMethodR\rpaymentMethod\"=\n" +
 	"\x10PayOrderResponse\x12)\n" +
-	"\x10transaction_uuid\x18\x01 \x01(\tR\x0ftransactionUuid*\xa3\x01\n" +
+	"\x10transaction_uuid\x18\x01 \x01(\tR\x0ftransactionUuid\"^\n" +
+	"\x12RefundOrderRequest\x12\x1d\n" +
+	"\n" +
+	"order_uuid\x18\x01 \x01(\tR\torderUuid\x12)\n" +
+	"\x10transaction_uuid\x18\x02 \x01(\tR\x0ftransactionUuid\"6\n" +
+	"\x13RefundOrderResponse\x12\x1f\n" +
+	"\vrefund_uuid\x18\x01 \x01(\tR\n" +
+	"refundUuid*\xa3\x01\n" +
 	"\rPaymentMethod\x12\x1e\n" +
 	"\x1aPAYMENT_METHOD_UNSPECIFIED\x10\x00\x12\x17\n" +
 	"\x13PAYMENT_METHOD_CARD\x10\x01\x12\x16\n" +
 	"\x12PAYMENT_METHOD_SBP\x10\x02\x12\x1e\n" +
 	"\x1aPAYMENT_METHOD_CREDIT_CARD\x10\x03\x12!\n" +
-	"\x1dPAYMENT_METHOD_INVESTOR_MONEY\x10\x042s\n" +
+	"\x1dPAYMENT_METHOD_INVESTOR_MONEY\x10\x042\xe2\x01\n" +
 	"\x0ePaymentService\x12a\n" +
-	"\bPayOrder\x12\x1b.payment.v1.PayOrderRequest\x1a\x1c.payment.v1.PayOrderResponse\"\x1a\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/payment/payBXZVgithub.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/proto/payment/v1;payment_v1b\x06proto3"
+	"\bPayOrder\x12\x1b.payment.v1.PayOrderRequest\x1a\x1c.payment.v1.PayOrderResponse\"\x1a\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/v1/payment/pay\x12m\n" +
+	"\vRefundOrder\x12\x1e.payment.v1.RefundOrderRequest\x1a\x1f.payment.v1.RefundOrderResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/v1/payment/refundBXZVgithub.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/proto/payment/v1;payment_v1b\x06proto3"
 
 var (
 	file_payment_v1_payment_proto_rawDescOnce sync.Once
@@ -230,18 +339,22 @@ func file_payment_v1_payment_proto_rawDescGZIP() []byte {
 }
 
 var file_payment_v1_payment_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_payment_v1_payment_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_payment_v1_payment_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_payment_v1_payment_proto_goTypes = []any{
-	(PaymentMethod)(0),       // 0: payment.v1.PaymentMethod
-	(*PayOrderRequest)(nil),  // 1: payment.v1.PayOrderRequest
-	(*PayOrderResponse)(nil), // 2: payment.v1.PayOrderResponse
+	(PaymentMethod)(0),          // 0: payment.v1.PaymentMethod
+	(*PayOrderRequest)(nil),     // 1: payment.v1.PayOrderRequest
+	(*PayOrderResponse)(nil),    // 2: payment.v1.PayOrderResponse
+	(*RefundOrderRequest)(nil),  // 3: payment.v1.RefundOrderRequest
+	(*RefundOrderResponse)(nil), // 4: payment.v1.RefundOrderResponse
 }
 var file_payment_v1_payment_proto_depIdxs = []int32{
 	0, // 0: payment.v1.PayOrderRequest.payment_method:type_name -> payment.v1.PaymentMethod
 	1, // 1: payment.v1.PaymentService.PayOrder:input_type -> payment.v1.PayOrderRequest
-	2, // 2: payment.v1.PaymentService.PayOrder:output_type -> payment.v1.PayOrderResponse
-	2, // [2:3] is the sub-list for method output_type
-	1, // [1:2] is the sub-list for method input_type
+	3, // 2: payment.v1.PaymentService.RefundOrder:input_type -> payment.v1.RefundOrderRequest
+	2, // 3: payment.v1.PaymentService.PayOrder:output_type -> payment.v1.PayOrderResponse
+	4, // 4: payment.v1.PaymentService.RefundOrder:output_type -> payment.v1.RefundOrderResponse
+	3, // [3:5] is the sub-list for method output_type
+	1, // [1:3] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -258,7 +371,7 @@ func file_payment_v1_payment_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_payment_v1_payment_proto_rawDesc), len(file_payment_v1_payment_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

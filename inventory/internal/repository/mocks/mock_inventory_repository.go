@@ -145,6 +145,28 @@ func (_c *InventoryRepository_ListParts_Call) RunAndReturn(run func(context.Cont
 	return _c
 }
 
+// Reserve provides a mock function with given fields: ctx, orderUUID, partUUIDs
+func (_m *InventoryRepository) Reserve(ctx context.Context, orderUUID uuid.UUID, partUUIDs []uuid.UUID) error {
+	ret := _m.Called(ctx, orderUUID, partUUIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Reserve")
+	}
+
+	return ret.Error(0)
+}
+
+// Release provides a mock function with given fields: ctx, orderUUID
+func (_m *InventoryRepository) Release(ctx context.Context, orderUUID uuid.UUID) error {
+	ret := _m.Called(ctx, orderUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Release")
+	}
+
+	return ret.Error(0)
+}
+
 // NewInventoryRepository creates a new instance of InventoryRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewInventoryRepository(t interface {

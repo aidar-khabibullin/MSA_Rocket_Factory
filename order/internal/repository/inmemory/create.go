@@ -10,8 +10,10 @@ import (
 )
 
 func (r *repository) CreateOrder(ctx context.Context, order *model.Order) (*model.Order, error) {
-	// Генерируем новый UUID для заказа
-	order.OrderUUID = uuid.New()
+	// UUID может быть задан заранее (под него уже сделан резерв деталей), иначе генерируем новый
+	if order.OrderUUID == uuid.Nil {
+		order.OrderUUID = uuid.New()
+	}
 
 	// Конвертируем в repo модель ПОСЛЕ установки UUID
 	repoOrder := converter.ToRepoOrder(order)

@@ -81,6 +81,13 @@ func (a *api) CreateOrder(ctx context.Context, req *orderV1.CreateOrderRequest) 
 			}, nil
 		}
 
+		if errors.Is(err, model.ErrPartsOutOfStock) {
+			return &orderV1.ConflictError{
+				Code:    http.StatusConflict,
+				Message: "some parts are out of stock",
+			}, nil
+		}
+
 		if errors.Is(err, model.ErrConvertFromClient) {
 			return &orderV1.InternalServerError{
 				Code:    http.StatusInternalServerError,

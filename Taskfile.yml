@@ -361,7 +361,8 @@ tasks:
       Запускает юнит-тесты для указанных модулей проекта.
       Можно указать конкретные модули через переменную MODULES.
       Исключаются интеграционные тесты в директориях integration и tests/integration.
-      Также исключаются тесты с тегом "integration".
+      Интеграционные тесты с build-тегом "integration" не компилируются без явного -tags=integration.
+      Тесты запускаются с детектором гонок (-race).
     cmds:
       - |
         go clean -testcache
@@ -369,7 +370,7 @@ tasks:
         for mod in {{.MODULES}}; do
           if [ -d "$mod" ]; then
             echo "🧪 Тестируем модуль $mod (только юнит-тесты)"
-            go test -v -tags="!integration" $(go list ./$mod/... | grep -v -E '(/integration|/tests/integration|/integrationtests)') || ERR=1
+            go test -v -race $(go list ./$mod/... | grep -v -E '(/integration|/tests/integration|/integrationtests)') || ERR=1
           fi
         done
         exit $ERR
@@ -377,6 +378,7 @@ tasks:
 
   up-core:
     desc: Поднять core контейнеры
+    deps: [ env:ensure ]
     dir: deploy/compose/core
     cmds:
       - echo "[task] 🚀 Поднимаем core контейнеры"
@@ -391,6 +393,7 @@ tasks:
 
   up-inventory:
     desc: Поднять Inventory сервис и все его зависимости
+    deps: [ env:ensure ]
     dir: deploy/compose/inventory
     cmds:
       - echo "[task] 📦 Поднимаем Inventory с зависимостями"
@@ -398,6 +401,7 @@ tasks:
 
   up-payment:
     desc: Поднять Payment сервис и все его зависимости
+    deps: [ env:ensure ]
     dir: deploy/compose/payment
     cmds:
       - echo "[task] 📦 Поднимаем Payment с зависимостями"
@@ -405,6 +409,7 @@ tasks:
 
   up-assembly:
     desc: Поднять Assembly сервис и все его зависимости
+    deps: [ env:ensure ]
     dir: deploy/compose/assembly
     cmds:
       - echo "[task] 📦 Поднимаем Assembly с зависимостями"
@@ -412,6 +417,7 @@ tasks:
 
   up-notification:
     desc: Поднять Notification сервис и все его зависимости
+    deps: [ env:ensure ]
     dir: deploy/compose/notification
     cmds:
       - echo "[task] 📦 Поднимаем Notification с зависимостями"
@@ -447,6 +453,7 @@ tasks:
 
   up-order:
     desc: Поднять Order сервис и все его зависимости
+    deps: [ env:ensure ]
     dir: deploy/compose/order
     cmds:
       - echo "[task] 📦 Поднимаем Order с зависимостями"
@@ -461,6 +468,7 @@ tasks:
 
   up-iam:
     desc: Поднять IAM сервис и все его зависимости
+    deps: [ env:ensure ]
     dir: deploy/compose/iam
     cmds:
       - echo "[task] 📦 Поднимаем IAM с зависимостями"
@@ -520,14 +528,21 @@ tasks:
         TEST_PASSWORD="TestP@ss123!"
         
         echo "📝 Регистрация тестового пользователя: $TEST_LOGIN"
-        REGISTER_RESPONSE=$({{.GRPCURL}} -plaintext -d "{\"info\":{\"info\":{\"login\":\"$TEST_LOGIN\",\"email\":\"$TEST_EMAIL\",\"notificationMethods\":[]},\"password\":\"$TEST_PASSWORD\"}}" localhost:50053 iam.v1.UserService/Register)
+        REGISTER_RESPONSE=$({{.GRPCURL}} -plaintext -d "{\"info\":{\"userInfo\":{\"login\":\"$TEST_LOGIN\",\"email\":\"$TEST_EMAIL\",\"notificationMethods\":[]},\"password\":\"$TEST_PASSWORD\"}}" localhost:50053 iam.v1.UserService/Register)
         
         if [[ -z "$REGISTER_RESPONSE" || "$REGISTER_RESPONSE" == *"error"* ]]; then
           echo "❌ Не удалось зарегистрировать тестового пользователя."
           echo "🔍 Ответ сервера: $REGISTER_RESPONSE"
           exit 1
         fi
-        echo "✅ Тестовый пользователь зарегистрирован"
+        # UUID зарегистрированного пользователя (понадобится для создания заказов)
+        REGISTERED_USER_UUID=$(echo $REGISTER_RESPONSE | grep -o '"userUuid": "[^"]*' | cut -d'"' -f4)
+        if [ -z "$REGISTERED_USER_UUID" ]; then
+          echo "❌ Не удалось извлечь UUID пользователя из ответа регистрации."
+          echo "🔍 Ответ сервера: $REGISTER_RESPONSE"
+          exit 1
+        fi
+        echo "✅ Тестовый пользователь зарегистрирован: $REGISTERED_USER_UUID"
         
         echo "🔑 Вход в систему"
         LOGIN_RESPONSE=$({{.GRPCURL}} -plaintext -d "{\"login\":\"$TEST_LOGIN\",\"password\":\"$TEST_PASSWORD\"}" localhost:50053 iam.v1.AuthService/Login)
@@ -586,10 +601,23 @@ tasks:
         echo "✅ Успешно получена деталь: $PART_NAME"
         
         echo
-        echo "👤 Тест 4: Создание пользователя для тестов"
-        # Генерируем уникальный UUID для пользователя
-        USER_UUID=$(uuidgen | tr '[:upper:]' '[:lower:]')
-        echo "✅ Сгенерирован UUID пользователя: $USER_UUID"
+        echo "👤 Тест 4: Владелец заказов - зарегистрированный пользователь"
+        # Заказы создаются от имени пользователя из сессии. Уведомления (notification) тоже ищут
+        # пользователя в IAM, поэтому случайный UUID здесь использовать нельзя.
+        USER_UUID="$REGISTERED_USER_UUID"
+        echo "✅ UUID пользователя: $USER_UUID"
+
+        echo "🔒 Проверка: нельзя создать заказ от имени другого пользователя"
+        FOREIGN_UUID=$(uuidgen | tr '[:upper:]' '[:lower:]')
+        FOREIGN_CODE=$(curl -s -o /dev/null -w '%{http_code}' -X POST "http://localhost:8080/api/v1/orders" \
+          -H "Content-Type: application/json" \
+          -H "X-Session-Uuid: $SESSION_UUID" \
+          -d "{\"user_uuid\":\"$FOREIGN_UUID\",\"part_uuids\":[\"$PART_UUID\"]}")
+        if [ "$FOREIGN_CODE" != "403" ]; then
+          echo "❌ Заказ от имени другого пользователя должен отклоняться (403), получен HTTP $FOREIGN_CODE"
+          exit 1
+        fi
+        echo "✅ Заказ от имени другого пользователя отклонён (HTTP 403)"
         
         echo
         echo "📝 Тест 5: Создание заказа (REST API)"
@@ -676,6 +704,17 @@ tasks:
           exit 1
         fi
         echo "✅ Статус заказа после оплаты: $ORDER_STATUS"
+
+        echo "🔁 Проверка: повторная оплата оплаченного заказа отклоняется (HTTP 409)"
+        REPAY_CODE=$(curl -s -o /dev/null -w '%{http_code}' -X POST "http://localhost:8080/api/v1/orders/$ORDER_UUID/pay" \
+          -H "Content-Type: application/json" \
+          -H "X-Session-Uuid: $SESSION_UUID" \
+          -d "{\"payment_method\":\"CARD\"}")
+        if [ "$REPAY_CODE" != "409" ]; then
+          echo "❌ Повторная оплата должна отклоняться (409), получен HTTP $REPAY_CODE"
+          exit 1
+        fi
+        echo "✅ Повторная оплата отклонена (HTTP 409)"
         
         echo
         echo "📝 Тест 9: Создание второго заказа для отмены (REST API)"
@@ -715,6 +754,33 @@ tasks:
           exit 1
         fi
         echo "✅ Начальный статус второго заказа: $ORDER2_STATUS"
+
+        echo
+        echo "🔒 Проверка доступа: другой пользователь не должен видеть, оплачивать и отменять чужой заказ"
+        OTHER_LOGIN="otheruser_$(date +%s)"
+        OTHER_PASSWORD="TestP@ss123!"
+        {{.GRPCURL}} -plaintext -d "{\"info\":{\"userInfo\":{\"login\":\"$OTHER_LOGIN\",\"email\":\"other_$(date +%s)@example.com\",\"notificationMethods\":[]},\"password\":\"$OTHER_PASSWORD\"}}" localhost:50053 iam.v1.UserService/Register > /dev/null
+        OTHER_LOGIN_RESPONSE=$({{.GRPCURL}} -plaintext -d "{\"login\":\"$OTHER_LOGIN\",\"password\":\"$OTHER_PASSWORD\"}" localhost:50053 iam.v1.AuthService/Login)
+        OTHER_SESSION=$(echo $OTHER_LOGIN_RESPONSE | grep -o '"sessionUuid": "[^"]*' | cut -d'"' -f4)
+        if [ -z "$OTHER_SESSION" ]; then
+          echo "❌ Не удалось получить сессию второго пользователя."
+          echo "🔍 Ответ сервера: $OTHER_LOGIN_RESPONSE"
+          exit 1
+        fi
+        GET_CODE=$(curl -s -o /dev/null -w '%{http_code}' -X GET "http://localhost:8080/api/v1/orders/$ORDER2_UUID" -H "X-Session-Uuid: $OTHER_SESSION")
+        PAY_CODE=$(curl -s -o /dev/null -w '%{http_code}' -X POST "http://localhost:8080/api/v1/orders/$ORDER2_UUID/pay" \
+          -H "Content-Type: application/json" -H "X-Session-Uuid: $OTHER_SESSION" -d "{\"payment_method\":\"CARD\"}")
+        CANCEL_CODE=$(curl -s -o /dev/null -w '%{http_code}' -X POST "http://localhost:8080/api/v1/orders/$ORDER2_UUID/cancel" -H "X-Session-Uuid: $OTHER_SESSION")
+        if [ "$GET_CODE" != "404" ] || [ "$PAY_CODE" != "404" ] || [ "$CANCEL_CODE" != "404" ]; then
+          echo "❌ Чужой заказ должен возвращать 404 (get=$GET_CODE, pay=$PAY_CODE, cancel=$CANCEL_CODE)"
+          exit 1
+        fi
+        AFTER_STATUS=$(curl -s -X GET "http://localhost:8080/api/v1/orders/$ORDER2_UUID" -H "X-Session-Uuid: $SESSION_UUID" | grep -o '"status": *"[^"]*' | cut -d'"' -f4)
+        if [ "$AFTER_STATUS" != "PENDING_PAYMENT" ]; then
+          echo "❌ Чужие запросы изменили заказ: статус $AFTER_STATUS вместо PENDING_PAYMENT"
+          exit 1
+        fi
+        echo "✅ Чужой заказ недоступен (get/pay/cancel -> 404), статус заказа не изменился"
         
         echo
         echo "❌ Тест 10: Отмена второго заказа (REST API)"
@@ -752,6 +818,16 @@ tasks:
           GOBIN={{.BIN_DIR}} go install github.com/a8m/envsubst/cmd/envsubst@{{.ENVSUBST_VERSION}}
         }
         echo "✅ envsubst установлен: {{.ENVSUBST}}"
+
+  env:ensure:
+    desc: "Создаёт .env файлы для compose, только если их ещё нет (не перезаписывает существующие)"
+    cmds:
+      - task: env:generate
+    status:
+      - |
+        for svc in $(echo "{{.SERVICES}}" | tr ',' ' '); do
+          test -f "{{.ROOT_DIR}}/deploy/compose/$svc/.env" || exit 1
+        done
 
   env:generate:
     desc: "Генерирует .env файлы для всех сервисов из шаблонов и единого файла конфигурации"

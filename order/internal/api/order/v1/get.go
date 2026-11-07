@@ -20,12 +20,26 @@ func (a *api) GetOrderByUUID(ctx context.Context, params orderV1.GetOrderByUUIDP
 		}, nil
 	}
 
-	order, err := a.orderService.GetOrder(ctx, params.OrderUUID)
+	order, err := a.getOwnedOrder(ctx, params.OrderUUID)
 	if err != nil {
 		logger.Error(ctx, "Get order error",
 			zap.String("order_uuid", params.OrderUUID.String()),
 			zap.Error(err),
 		)
+
+		if errors.Is(err, errUnauthenticated) {
+			return &orderV1.UnauthorizedError{
+				Code:    http.StatusUnauthorized,
+				Message: "authentication required",
+			}, nil
+		}
+
+		if errors.Is(err, errInvalidSessionUser) {
+			return &orderV1.InternalServerError{
+				Code:    http.StatusInternalServerError,
+				Message: "invalid session user",
+			}, nil
+		}
 
 		if errors.Is(err, model.ErrOrderNotFound) {
 			return &orderV1.NotFoundError{

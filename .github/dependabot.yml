@@ -1,0 +1,45 @@
+version: 2
+
+updates:
+  # Go-модули (монорепо с go.work: у каждого сервиса свой go.mod)
+  - package-ecosystem: gomod
+    directories:
+      - /assembly
+      - /iam
+      - /inventory
+      - /notification
+      - /order
+      - /payment
+      - /platform
+      - /shared
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # Минорные и патч-обновления объединяем, чтобы не плодить PR
+      go-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # Базовые образы в Dockerfile сервисов
+  - package-ecosystem: docker
+    directories:
+      - /deploy/docker/assembly
+      - /deploy/docker/iam
+      - /deploy/docker/inventory
+      - /deploy/docker/notification
+      - /deploy/docker/order
+      - /deploy/docker/payment
+    schedule:
+      interval: weekly

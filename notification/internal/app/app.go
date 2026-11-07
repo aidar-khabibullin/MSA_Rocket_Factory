@@ -8,6 +8,7 @@ import (
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/notification/internal/config"
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/platform/pkg/closer"
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/platform/pkg/logger"
+	"github.com/aidar-khabibullin/MSA_Rocket_Factory/platform/pkg/runner"
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/platform/pkg/tracing"
 )
 
@@ -27,30 +28,29 @@ func New(ctx context.Context) (*App, error) {
 }
 
 func (a *App) Run(ctx context.Context) error {
-	go func() {
-		err := a.diContainer.OrderPaidConsumer(ctx).RunConsumer(ctx)
-		if err != nil {
-			logger.Error(ctx, "❌ Ошибка при работе OrderPaid Consumer", zap.Error(err))
-		}
-	}()
+	// Kafka-консьюмеры критичны: без них сервис не выполняет свою работу. Если любой из них упал,
+	// падает весь сервис, и Docker (restart: unless-stopped) его перезапускает.
+	// Раньше ошибка только логировалась, и сервис оставался живым процессом без консьюмеров.
+	err := runner.Run(ctx,
+		runner.ConsumerTask("OrderPaid Consumer", a.diContainer.OrderPaidConsumer(ctx)),
+		runner.ConsumerTask("ShipAssembled Consumer", a.diContainer.ShipAssembledConsumer(ctx)),
+		// Telegram-бот нефатален: в режиме разработки используется заглушка, и его сбой не должен ронять сервис
+		runner.Task{Name: "Telegram bot", Run: func(ctx context.Context) error {
+			if err := a.diContainer.TelegramClient(ctx).Start(ctx); err != nil {
+				logger.Error(ctx, "❌ Ошибка при запуске Telegram бота", zap.Error(err))
+			}
 
-	go func() {
-		err := a.diContainer.ShipAssembledConsumer(ctx).RunConsumer(ctx)
-		if err != nil {
-			logger.Error(ctx, "❌ Ошибка при работе ShipAssembled Consumer", zap.Error(err))
-		}
-	}()
+			<-ctx.Done()
 
-	go func() {
-		err := a.diContainer.TelegramClient(ctx).Start(ctx)
-		if err != nil {
-			logger.Error(ctx, "❌ Ошибка при запуске Telegram бота", zap.Error(err))
-		}
-	}()
+			return nil
+		}},
+	)
 
-	<-ctx.Done()
-	logger.Info(ctx, "🛑 Получен сигнал завершения работы")
-	return nil
+	if ctx.Err() != nil {
+		logger.Info(ctx, "🛑 Получен сигнал завершения работы")
+	}
+
+	return err
 }
 
 func (a *App) initDeps(ctx context.Context) error {

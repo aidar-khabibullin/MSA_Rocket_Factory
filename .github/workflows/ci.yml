@@ -9,6 +9,14 @@ permissions:
   pages: write
   id-token: write
 
+# Новый пуш в ветку или PR отменяет ещё идущий предыдущий запуск того же события.
+# На main отмена выключена: там коммитится бейдж покрытия и публикуются GitHub Pages,
+# прерывание посреди этих шагов оставило бы полусостояние.
+# event_name в группе нужен, чтобы запуски по push и по pull_request не отменяли друг друга.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   extract-vars:
     name: Extract Variables from Taskfile

@@ -35,11 +35,15 @@ FROM scratch
 # Копируем SSL сертификаты для HTTPS запросов
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-# Создаем пользователя без прав root для безопасности
+# Копируем /etc/passwd, чтобы UID 65534 (nobody) разрешался в имя пользователя
 COPY --from=builder /etc/passwd /etc/passwd
 
 # Копируем бинарный файл
 COPY --from=builder /app/notification/notification-service /notification-service
 
-# Запускаем приложение
+# Запускаем от непривилегированного пользователя nobody (UID 65534).
+# /etc/passwd нужен обязательно: OpenTelemetry определяет текущего пользователя через user.Current(),
+# а в статическом бинарнике (CGO_ENABLED=0) без записи в passwd он падает на старте.
+USER 65534:65534
+
 ENTRYPOINT ["/notification-service"]

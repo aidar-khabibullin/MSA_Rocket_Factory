@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"context"
 	"testing"
 
 	"github.com/google/uuid"
@@ -41,7 +40,7 @@ func TestAPI_CancelOrder_Success(t *testing.T) {
 		Once()
 
 	// Act
-	res, err := api.CancelOrder(context.Background(), params)
+	res, err := api.CancelOrder(expectOwnedOrder(mockService, params.OrderUUID), params)
 
 	// Assert
 	assert.NoError(t, err)
@@ -68,7 +67,7 @@ func TestAPI_CancelOrder_OrderNotFound(t *testing.T) {
 		Once()
 
 	// Act
-	res, err := api.CancelOrder(context.Background(), params)
+	res, err := api.CancelOrder(expectOwnedOrder(mockService, params.OrderUUID), params)
 
 	// Assert
 	assert.NoError(t, err)
@@ -97,7 +96,7 @@ func TestAPI_CancelOrder_ConvertFromRepoError(t *testing.T) {
 		Once()
 
 	// Act
-	res, err := api.CancelOrder(context.Background(), params)
+	res, err := api.CancelOrder(expectOwnedOrder(mockService, params.OrderUUID), params)
 
 	// Assert
 	assert.NoError(t, err)
@@ -126,7 +125,7 @@ func TestAPI_CancelOrder_AlreadyPaid(t *testing.T) {
 		Once()
 
 	// Act
-	res, err := api.CancelOrder(context.Background(), params)
+	res, err := api.CancelOrder(expectOwnedOrder(mockService, params.OrderUUID), params)
 
 	// Assert
 	assert.NoError(t, err)
@@ -155,7 +154,7 @@ func TestAPI_CancelOrder_AlreadyCancelled(t *testing.T) {
 		Once()
 
 	// Act
-	res, err := api.CancelOrder(context.Background(), params)
+	res, err := api.CancelOrder(expectOwnedOrder(mockService, params.OrderUUID), params)
 
 	// Assert
 	assert.NoError(t, err)
@@ -253,7 +252,7 @@ func TestAPI_CancelOrder_TableDriven(t *testing.T) {
 			}
 
 			// Act
-			res, err := api.CancelOrder(context.Background(), params)
+			res, err := api.CancelOrder(expectOwnedOrder(mockService, params.OrderUUID), params)
 
 			// Assert
 			if tt.expectError {

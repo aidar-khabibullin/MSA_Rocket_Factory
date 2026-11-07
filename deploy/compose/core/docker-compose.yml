@@ -14,13 +14,9 @@ services:
     networks:
       - microservices-net
       # Подключаем контейнер к общей сети микросервисов
-    healthcheck:
-      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost:8888/metrics"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 20s
-      # Проверяем готовность коллектора через Prometheus метрики
+    # healthcheck намеренно не задан: в образе otel/opentelemetry-collector-contrib нет ни shell,
+    # ни wget/curl, поэтому любая проверка изнутри контейнера всегда падает (контейнер был бы unhealthy).
+    # Состояние коллектора можно проверить снаружи: http://localhost:${OTEL_COLLECTOR_METRICS_PORT}/metrics
     depends_on:
       jaeger:
         condition: service_healthy
@@ -367,12 +363,12 @@ services:
       # Гарантируем, что Kafka UI стартует только после того, как Kafka станет healthy.
 
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "wget", "--quiet", "--spider", "http://localhost:8080/actuator/health"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 20s
-      # Проверяем состояние UI по HTTP endpoint /actuator/health.
+      # Проверяем состояние UI по HTTP endpoint /actuator/health (в образе есть wget, но нет curl).
       # UI будет считаться healthy только после успешного ответа от сервера.
 
     restart: unless-stopped

@@ -11,8 +11,28 @@ import (
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/model"
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/service/mocks"
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/platform/pkg/logger"
+	grpcAuth "github.com/aidar-khabibullin/MSA_Rocket_Factory/platform/pkg/middleware/grpc"
 	orderV1 "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/openapi/order/v1"
+	iamV1 "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/proto/iam/v1"
 )
+
+// authedCtx возвращает контекст с аутентифицированным пользователем, как это делает AuthMiddleware
+func authedCtx(userUUID uuid.UUID) context.Context {
+	return context.WithValue(context.Background(), grpcAuth.GetUserContextKey(), &iamV1.User{Uuid: userUUID.String()})
+}
+
+// expectOwnedOrder настраивает мок так, что заказ orderUUID существует и принадлежит новому пользователю,
+// и возвращает контекст этого пользователя (как после AuthMiddleware). Используется в тестах pay/cancel,
+// где хэндлер сначала проверяет владельца через GetOrder.
+func expectOwnedOrder(m *mocks.OrderService, orderUUID uuid.UUID) context.Context {
+	owner := uuid.New()
+	m.EXPECT().
+		GetOrder(mock.Anything, orderUUID).
+		Return(&model.Order{OrderUUID: orderUUID, UserUUID: owner, Status: model.StatusPendingPayment}, nil).
+		Once()
+
+	return authedCtx(owner)
+}
 
 func init() {
 	// Инициализируем logger для тестов
@@ -53,7 +73,7 @@ func TestAPI_CreateOrder_Success(t *testing.T) {
 		Once()
 
 	// Act
-	res, err := api.CreateOrder(context.Background(), req)
+	res, err := api.CreateOrder(authedCtx(uuid.UUID(req.UserUUID)), req)
 
 	// Assert
 	assert.NoError(t, err)
@@ -78,7 +98,7 @@ func TestAPI_CreateOrder_ServiceNil(t *testing.T) {
 	}
 
 	// Act
-	res, err := api.CreateOrder(context.Background(), req)
+	res, err := api.CreateOrder(authedCtx(uuid.UUID(req.UserUUID)), req)
 
 	// Assert
 	assert.NoError(t, err)
@@ -106,7 +126,7 @@ func TestAPI_CreateOrder_PartsNotSpecified(t *testing.T) {
 		Once()
 
 	// Act
-	res, err := api.CreateOrder(context.Background(), req)
+	res, err := api.CreateOrder(authedCtx(uuid.UUID(req.UserUUID)), req)
 
 	// Assert
 	assert.NoError(t, err)
@@ -136,7 +156,7 @@ func TestAPI_CreateOrder_PartsNotFound(t *testing.T) {
 		Once()
 
 	// Act
-	res, err := api.CreateOrder(context.Background(), req)
+	res, err := api.CreateOrder(authedCtx(uuid.UUID(req.UserUUID)), req)
 
 	// Assert
 	assert.NoError(t, err)
@@ -166,7 +186,7 @@ func TestAPI_CreateOrder_ConvertFromClientError(t *testing.T) {
 		Once()
 
 	// Act
-	res, err := api.CreateOrder(context.Background(), req)
+	res, err := api.CreateOrder(authedCtx(uuid.UUID(req.UserUUID)), req)
 
 	// Assert
 	assert.NoError(t, err)
@@ -196,7 +216,7 @@ func TestAPI_CreateOrder_InventoryClientError(t *testing.T) {
 		Once()
 
 	// Act
-	res, err := api.CreateOrder(context.Background(), req)
+	res, err := api.CreateOrder(authedCtx(uuid.UUID(req.UserUUID)), req)
 
 	// Assert
 	assert.NoError(t, err)
@@ -296,7 +316,7 @@ func TestAPI_CreateOrder_TableDriven(t *testing.T) {
 			api := NewAPI(mockService)
 
 			// Act
-			res, err := api.CreateOrder(context.Background(), tt.request)
+			res, err := api.CreateOrder(authedCtx(uuid.UUID(tt.request.UserUUID)), tt.request)
 
 			// Assert
 			if tt.expectError {
@@ -331,4 +351,75 @@ func TestAPI_CreateOrder_TableDriven(t *testing.T) {
 			mockService.AssertExpectations(t)
 		})
 	}
+}
+
+func TestAPI_CreateOrder_NoAuthenticatedUser(t *testing.T) {
+	mockService := mocks.NewOrderService(t) // сервис вызываться не должен
+	api := NewAPI(mockService)
+
+	res, err := api.CreateOrder(context.Background(), &orderV1.CreateOrderRequest{
+		UserUUID:  orderV1.UserUUID(uuid.New()),
+		PartUuids: []uuid.UUID{uuid.New()},
+	})
+
+	assert.NoError(t, err)
+	unauthorized, ok := res.(*orderV1.UnauthorizedError)
+	assert.True(t, ok, "ожидался UnauthorizedError, получен %T", res)
+	assert.Equal(t, 401, unauthorized.Code)
+}
+
+// Регрессия: клиент не должен иметь возможности создать заказ от имени другого пользователя
+func TestAPI_CreateOrder_ForeignUserUUIDIsForbidden(t *testing.T) {
+	mockService := mocks.NewOrderService(t) // сервис вызываться не должен
+	api := NewAPI(mockService)
+
+	sessionUser := uuid.New()
+	someoneElse := uuid.New()
+
+	res, err := api.CreateOrder(authedCtx(sessionUser), &orderV1.CreateOrderRequest{
+		UserUUID:  orderV1.UserUUID(someoneElse),
+		PartUuids: []uuid.UUID{uuid.New()},
+	})
+
+	assert.NoError(t, err)
+	forbidden, ok := res.(*orderV1.ForbiddenError)
+	assert.True(t, ok, "ожидался ForbiddenError, получен %T", res)
+	assert.Equal(t, 403, forbidden.Code)
+}
+
+func TestAPI_CreateOrder_OwnerComesFromSession(t *testing.T) {
+	mockService := mocks.NewOrderService(t)
+	api := NewAPI(mockService)
+
+	sessionUser := uuid.New()
+	partUUID := uuid.New()
+
+	mockService.EXPECT().
+		CreateOrder(mock.Anything, mock.MatchedBy(func(order *model.Order) bool {
+			return order.UserUUID == sessionUser
+		})).
+		Return(&model.Order{OrderUUID: uuid.New(), UserUUID: sessionUser, TotalPrice: 10}, nil).
+		Once()
+
+	// user_uuid в теле не передан (нулевой) - владелец берётся из сессии
+	res, err := api.CreateOrder(authedCtx(sessionUser), &orderV1.CreateOrderRequest{
+		PartUuids: []uuid.UUID{partUUID},
+	})
+
+	assert.NoError(t, err)
+	_, ok := res.(*orderV1.CreateOrderResponse)
+	assert.True(t, ok, "ожидался CreateOrderResponse, получен %T", res)
+}
+
+func TestAPI_CreateOrder_InvalidSessionUserUUID(t *testing.T) {
+	mockService := mocks.NewOrderService(t) // сервис вызываться не должен
+	api := NewAPI(mockService)
+
+	ctx := context.WithValue(context.Background(), grpcAuth.GetUserContextKey(), &iamV1.User{Uuid: "not-a-uuid"})
+
+	res, err := api.CreateOrder(ctx, &orderV1.CreateOrderRequest{PartUuids: []uuid.UUID{uuid.New()}})
+
+	assert.NoError(t, err)
+	_, ok := res.(*orderV1.InternalServerError)
+	assert.True(t, ok, "ожидался InternalServerError, получен %T", res)
 }

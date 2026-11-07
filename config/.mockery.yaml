@@ -34,3 +34,7 @@ packages:
   github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/client/grpc:
     config:
       include-regex: ".*Client"
+
+  github.com/aidar-khabibullin/MSA_Rocket_Factory/iam/internal/repository:
+    config:
+      include-regex: ".*Repository"

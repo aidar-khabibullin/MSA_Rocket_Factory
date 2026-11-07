@@ -9,4 +9,5 @@ use (
 	./assembly
 	./notification
 	./iam
+	./bff
 )

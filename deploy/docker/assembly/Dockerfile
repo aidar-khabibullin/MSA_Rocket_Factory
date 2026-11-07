@@ -1,5 +1,5 @@
 # Многоэтапная сборка для оптимизации размера образа
-FROM golang:1.24-alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 # Устанавливаем git для загрузки зависимостей
 RUN apk add --no-cache git

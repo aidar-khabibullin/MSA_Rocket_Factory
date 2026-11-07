@@ -77,6 +77,10 @@ task down-all    # остановить и удалить контейнеры
 
 Описание метрик и дашбордов: [docs/metrics.md](docs/metrics.md).
 
+Архитектурные решения и известные ограничения: [docs/architecture.md](docs/architecture.md).
+
+Нагрузочный тест и трассировка: [docs/load-testing.md](docs/load-testing.md).
+
 ## Разработка
 
 Полный список команд: `task --list`.

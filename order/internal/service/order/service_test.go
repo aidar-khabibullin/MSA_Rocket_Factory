@@ -46,6 +46,14 @@ func (m *MockOrderRepository) UpdateOrder(ctx context.Context, order *model.Orde
 	return args.Get(0).(*model.Order), args.Error(1)
 }
 
+func (m *MockOrderRepository) UpdateOrderIfStatus(ctx context.Context, order *model.Order, expected model.OrderStatus) (*model.Order, error) {
+	args := m.Called(ctx, order, expected)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*model.Order), args.Error(1)
+}
+
 // MockOrderPaidProducer - мок для OrderPaidProducer
 type MockOrderPaidProducer struct {
 	mock.Mock

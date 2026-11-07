@@ -854,6 +854,15 @@ tasks:
         export SERVICES="{{.SERVICES}}"
         ENV_SUBST={{.ENVSUBST}} "$SCRIPT"
 
+  load-test:
+    desc: "Нагрузочный тест HTTP API order (нужен поднятый стек: task up-all)"
+    summary: |
+      Создаёт пользователя и сессию, затем прогоняет сценарий create/get/pay/race.
+      Параметры передаются после --, например: task load-test -- -workers 50 -duration 20s -pay 20
+    deps: [ grpcurl:install ]
+    cmds:
+      - ./scripts/loadtest/run.sh {{.CLI_ARGS}}
+
   test-integration:
     desc: "Запускает интеграционные тесты для указанных модулей"
     summary: |

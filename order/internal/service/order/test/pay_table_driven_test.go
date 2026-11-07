@@ -74,7 +74,7 @@ func (s *ServiceSuite) TestPayOrder_TableDriven() {
 					Return(dbOrder, nil)
 				s.paymentClient.On("CreatePayment", mock.Anything, mock.AnythingOfType("*model.Order")).
 					Return(paidOrder, nil)
-				s.orderRepository.On("UpdateOrder", mock.Anything, paidOrder).
+				s.orderRepository.On("UpdateOrderIfStatus", mock.Anything, paidOrder, model.StatusPendingPayment).
 					Return(paidOrder, nil)
 
 				return dbOrder, paidOrder
@@ -142,7 +142,7 @@ func (s *ServiceSuite) TestPayOrder_TableDriven() {
 					Return(dbOrder, nil)
 				s.paymentClient.On("CreatePayment", mock.Anything, mock.AnythingOfType("*model.Order")).
 					Return(paidOrder, nil)
-				s.orderRepository.On("UpdateOrder", mock.Anything, paidOrder).
+				s.orderRepository.On("UpdateOrderIfStatus", mock.Anything, paidOrder, model.StatusPendingPayment).
 					Return(paidOrder, nil)
 
 				return dbOrder, paidOrder
@@ -255,7 +255,7 @@ func (s *ServiceSuite) TestPayOrder_TableDriven() {
 					Return(dbOrder, nil)
 				s.paymentClient.On("CreatePayment", mock.Anything, mock.AnythingOfType("*model.Order")).
 					Return(paidOrder, nil)
-				s.orderRepository.On("UpdateOrder", mock.Anything, paidOrder).
+				s.orderRepository.On("UpdateOrderIfStatus", mock.Anything, paidOrder, model.StatusPendingPayment).
 					Return(nil, model.ErrOrderNotFound)
 
 				return dbOrder, paidOrder
@@ -304,7 +304,7 @@ func (s *ServiceSuite) TestPayOrder_TableDriven() {
 					Return(dbOrder, nil)
 				s.paymentClient.On("CreatePayment", mock.Anything, mock.AnythingOfType("*model.Order")).
 					Return(paidOrder, nil)
-				s.orderRepository.On("UpdateOrder", mock.Anything, paidOrder).
+				s.orderRepository.On("UpdateOrderIfStatus", mock.Anything, paidOrder, model.StatusPendingPayment).
 					Return(paidOrder, nil)
 
 				return dbOrder, paidOrder
@@ -437,7 +437,7 @@ func (s *ServiceSuite) TestPayOrder_PaymentMethodVariations() {
 				Return(dbOrder, nil)
 			s.paymentClient.On("CreatePayment", mock.Anything, mock.AnythingOfType("*model.Order")).
 				Return(paidOrder, nil)
-			s.orderRepository.On("UpdateOrder", mock.Anything, paidOrder).
+			s.orderRepository.On("UpdateOrderIfStatus", mock.Anything, paidOrder, model.StatusPendingPayment).
 				Return(paidOrder, nil)
 
 			// Вызов метода

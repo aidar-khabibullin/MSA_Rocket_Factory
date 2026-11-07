@@ -376,68 +376,6 @@ jobs:
             cover.out
           retention-days: 30
 
-      # badge - обновляем только для main ветки
-      - name: Update coverage Badge
-        if: github.ref == 'refs/heads/main'
-        uses: tj-actions/coverage-badge-go@v2
-        with:
-          filename: cover.out
-          green: 80
-          yellow: 60
-          target: README.md
-
-      - name: Verify Changed files
-        if: github.ref == 'refs/heads/main'
-        uses: tj-actions/verify-changed-files@v12
-        id: verify-changed-files
-        with:
-          files: README.md
-
-      - name: Debug coverage info
-        if: github.ref == 'refs/heads/main'
-        run: |
-          echo "📊 Coverage files info:"
-          echo "coverage.out:"
-          ls -la coverage.out || echo "coverage.out not found"
-          echo "cover.out:"
-          ls -la cover.out || echo "cover.out not found"
-          
-          echo ""
-          echo "📈 Raw coverage data (first 10 lines):"
-          head -10 coverage.out || echo "Cannot read coverage.out"
-          
-          echo ""
-          echo "📈 Function coverage summary:"
-          cat cover.out || echo "Cannot read cover.out"
-          
-          echo ""
-          echo "🔍 README badge section before update:"
-          grep -A 2 -B 2 "coverage" README.md || echo "No coverage badge found in README.md"
-          
-          echo ""
-          echo "🔍 README changes after badge update:"
-          git diff README.md || echo "No changes in README.md"
-
-      - name: Commit changes
-        if: github.ref == 'refs/heads/main' && steps.verify-changed-files.outputs.files_changed == 'true'
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add README.md
-          git commit -m "chore: Updated coverage badge."
-
-      - name: Push changes
-        if: github.ref == 'refs/heads/main' && steps.verify-changed-files.outputs.files_changed == 'true'
-        run: |
-          for i in 1 2 3 4 5; do
-            git pull --rebase --autostash -X theirs origin ${{ github.ref_name }} && \
-            git push origin HEAD:${{ github.ref_name }} && exit 0
-            echo "Push failed (attempt $i), retrying..."
-            git rebase --abort 2>/dev/null || true
-            sleep $((i * 3))
-          done
-          echo "Failed to push after retries" && exit 1
-
   coverage:
     needs: test
     runs-on: ubuntu-latest

@@ -170,3 +170,28 @@ func (s *InMemoryOrderRepositorySuite) TestUpdateOrder_PreserveOtherFields() {
 	assert.Equal(s.T(), "bank_transfer", result.PaymentMethod)
 	assert.Equal(s.T(), model.StatusPaid, result.Status)
 }
+
+func (s *InMemoryOrderRepositorySuite) TestUpdateOrderIfStatus() {
+	created, err := s.repository.CreateOrder(context.Background(), &model.Order{
+		UserUUID:   uuid.New(),
+		PartUUIDs:  []uuid.UUID{uuid.New()},
+		TotalPrice: 1000.0,
+		Status:     model.StatusPendingPayment,
+	})
+	s.Require().NoError(err)
+
+	created.Status = model.StatusPaid
+
+	// Первый запрос видит ожидаемый статус и применяется
+	updated, err := s.repository.UpdateOrderIfStatus(context.Background(), created, model.StatusPendingPayment)
+	s.Require().NoError(err)
+	s.Equal(model.StatusPaid, updated.Status)
+
+	// Второй такой же запрос уже опоздал: статус в хранилище изменился
+	_, err = s.repository.UpdateOrderIfStatus(context.Background(), created, model.StatusPendingPayment)
+	s.Require().ErrorIs(err, model.ErrOrderStatusChanged)
+
+	// Несуществующий заказ
+	_, err = s.repository.UpdateOrderIfStatus(context.Background(), &model.Order{OrderUUID: uuid.New()}, model.StatusPendingPayment)
+	s.Require().ErrorIs(err, model.ErrOrderNotFound)
+}

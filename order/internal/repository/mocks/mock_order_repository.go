@@ -204,6 +204,66 @@ func (_c *OrderRepository_UpdateOrder_Call) RunAndReturn(run func(context.Contex
 	return _c
 }
 
+// UpdateOrderIfStatus provides a mock function with given fields: ctx, order, expected
+func (_m *OrderRepository) UpdateOrderIfStatus(ctx context.Context, order *model.Order, expected model.OrderStatus) (*model.Order, error) {
+	ret := _m.Called(ctx, order, expected)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateOrderIfStatus")
+	}
+
+	var r0 *model.Order
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, *model.Order, model.OrderStatus) (*model.Order, error)); ok {
+		return rf(ctx, order, expected)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, *model.Order, model.OrderStatus) *model.Order); ok {
+		r0 = rf(ctx, order, expected)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*model.Order)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, *model.Order, model.OrderStatus) error); ok {
+		r1 = rf(ctx, order, expected)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// OrderRepository_UpdateOrderIfStatus_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateOrderIfStatus'
+type OrderRepository_UpdateOrderIfStatus_Call struct {
+	*mock.Call
+}
+
+// UpdateOrderIfStatus is a helper method to define mock.On call
+//   - ctx context.Context
+//   - order *model.Order
+//   - expected model.OrderStatus
+func (_e *OrderRepository_Expecter) UpdateOrderIfStatus(ctx interface{}, order interface{}, expected interface{}) *OrderRepository_UpdateOrderIfStatus_Call {
+	return &OrderRepository_UpdateOrderIfStatus_Call{Call: _e.mock.On("UpdateOrderIfStatus", ctx, order, expected)}
+}
+
+func (_c *OrderRepository_UpdateOrderIfStatus_Call) Run(run func(ctx context.Context, order *model.Order, expected model.OrderStatus)) *OrderRepository_UpdateOrderIfStatus_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		run(args[0].(context.Context), args[1].(*model.Order), args[2].(model.OrderStatus))
+	})
+	return _c
+}
+
+func (_c *OrderRepository_UpdateOrderIfStatus_Call) Return(_a0 *model.Order, _a1 error) *OrderRepository_UpdateOrderIfStatus_Call {
+	_c.Call.Return(_a0, _a1)
+	return _c
+}
+
+func (_c *OrderRepository_UpdateOrderIfStatus_Call) RunAndReturn(run func(context.Context, *model.Order, model.OrderStatus) (*model.Order, error)) *OrderRepository_UpdateOrderIfStatus_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // NewOrderRepository creates a new instance of OrderRepository. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewOrderRepository(t interface {

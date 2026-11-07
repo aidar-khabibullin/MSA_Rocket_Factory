@@ -59,7 +59,7 @@ func (s *ServiceSuite) TestPayOrder_Success() {
 
 	s.paymentClient.On("CreatePayment", mock.Anything, orderWithPaymentMethod).
 		Return(paidOrder, nil)
-	s.orderRepository.On("UpdateOrder", mock.Anything, paidOrder).
+	s.orderRepository.On("UpdateOrderIfStatus", mock.Anything, paidOrder, model.StatusPendingPayment).
 		Return(paidOrder, nil)
 
 	// Вызов метода
@@ -191,7 +191,7 @@ func (s *ServiceSuite) TestPayOrder_UpdateError() {
 
 	s.paymentClient.On("CreatePayment", mock.Anything, orderWithPaymentMethod).
 		Return(paidOrder, nil)
-	s.orderRepository.On("UpdateOrder", mock.Anything, paidOrder).
+	s.orderRepository.On("UpdateOrderIfStatus", mock.Anything, paidOrder, model.StatusPendingPayment).
 		Return(nil, model.ErrOrderNotFound)
 
 	// Вызов метода
@@ -264,7 +264,7 @@ func (s *ServiceSuite) TestPayOrder_PaymentMethodPropagation() {
 
 			s.paymentClient.On("CreatePayment", mock.Anything, orderWithPaymentMethod).
 				Return(paidOrder, nil)
-			s.orderRepository.On("UpdateOrder", mock.Anything, paidOrder).
+			s.orderRepository.On("UpdateOrderIfStatus", mock.Anything, paidOrder, model.StatusPendingPayment).
 				Return(paidOrder, nil)
 
 			// Вызов метода
@@ -328,7 +328,7 @@ func (s *ServiceSuite) TestPayOrder_EventPaymentMethodPropagation() {
 
 	s.paymentClient.On("CreatePayment", mock.Anything, orderWithPaymentMethod).
 		Return(paidOrder, nil)
-	s.orderRepository.On("UpdateOrder", mock.Anything, paidOrder).
+	s.orderRepository.On("UpdateOrderIfStatus", mock.Anything, paidOrder, model.StatusPendingPayment).
 		Return(paidOrder, nil)
 
 	// Вызов метода
@@ -379,4 +379,37 @@ func (s *ServiceSuite) TestPayOrder_NotPendingPaymentIsRejected() {
 			s.Require().Nil(s.orderPaidProducer.lastEvent, "событие order.paid публиковаться не должно")
 		})
 	}
+}
+
+// Параллельный запрос успел изменить статус между проверкой и записью:
+// заказ не должен быть оплачен повторно, а событие order.paid не должно уйти второй раз.
+func (s *ServiceSuite) TestPayOrder_StatusChangedConcurrently() {
+	orderUUID := uuid.New()
+	userUUID := uuid.New()
+
+	dbOrder := &model.Order{
+		OrderUUID:  orderUUID,
+		UserUUID:   userUUID,
+		TotalPrice: 100.0,
+		Status:     model.StatusPendingPayment,
+	}
+	paidOrder := &model.Order{
+		OrderUUID:       orderUUID,
+		UserUUID:        userUUID,
+		TotalPrice:      100.0,
+		TransactionUUID: uuid.New(),
+		PaymentMethod:   "SBP",
+		Status:          model.StatusPaid,
+	}
+
+	s.orderRepository.On("GetOrder", mock.Anything, orderUUID).Return(dbOrder, nil)
+	s.paymentClient.On("CreatePayment", mock.Anything, mock.AnythingOfType("*model.Order")).Return(paidOrder, nil)
+	s.orderRepository.On("UpdateOrderIfStatus", mock.Anything, paidOrder, model.StatusPendingPayment).
+		Return(nil, model.ErrOrderStatusChanged)
+
+	result, err := s.service.PayOrder(context.Background(), &model.Order{OrderUUID: orderUUID, PaymentMethod: "SBP"})
+
+	s.Require().Nil(result)
+	s.Require().ErrorIs(err, model.ErrOrderNotPayable)
+	s.Require().Nil(s.orderPaidProducer.GetLastEvent(), "событие не должно публиковаться при конфликте")
 }

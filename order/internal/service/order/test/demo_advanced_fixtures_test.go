@@ -382,7 +382,7 @@ func (s *ServiceSuite) TestEventHandlingWithFixtures() {
 			Return(dbOrder, nil)
 		s.paymentClient.On("CreatePayment", mock.Anything, mock.AnythingOfType("*model.Order")).
 			Return(paidOrder, nil)
-		s.orderRepository.On("UpdateOrder", mock.Anything, paidOrder).
+		s.orderRepository.On("UpdateOrderIfStatus", mock.Anything, paidOrder, model.StatusPendingPayment).
 			Return(paidOrder, nil)
 
 		// Выполняем оплату заказа

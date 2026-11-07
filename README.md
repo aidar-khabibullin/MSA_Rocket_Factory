@@ -99,6 +99,5 @@ task mockery:gen     # генерация моков
 
 ## CI
 
-GitHub Actions (`.github/workflows`): линтер, unit- и интеграционные тесты, отчёт о покрытии (публикуется на GitHub Pages)
-и проверка уязвимостей `govulncheck` (`security.yml`, также раз в неделю). Версии Go и инструментов берутся из `Taskfile.yml`.
-Зависимости обновляет Dependabot (`.github/dependabot.yml`).
+GitHub Actions (`.github/workflows`): линтер, unit- и интеграционные тесты и отчёт о покрытии (публикуется на GitHub Pages).
+Версии Go и инструментов берутся из `Taskfile.yml`. Зависимости обновляет Dependabot (`.github/dependabot.yml`).

@@ -361,7 +361,8 @@ tasks:
       Запускает юнит-тесты для указанных модулей проекта.
       Можно указать конкретные модули через переменную MODULES.
       Исключаются интеграционные тесты в директориях integration и tests/integration.
-      Также исключаются тесты с тегом "integration".
+      Интеграционные тесты с build-тегом "integration" не компилируются без явного -tags=integration.
+      Тесты запускаются с детектором гонок (-race).
     cmds:
       - |
         go clean -testcache
@@ -369,7 +370,7 @@ tasks:
         for mod in {{.MODULES}}; do
           if [ -d "$mod" ]; then
             echo "🧪 Тестируем модуль $mod (только юнит-тесты)"
-            go test -v -tags="!integration" $(go list ./$mod/... | grep -v -E '(/integration|/tests/integration|/integrationtests)') || ERR=1
+            go test -v -race $(go list ./$mod/... | grep -v -E '(/integration|/tests/integration|/integrationtests)') || ERR=1
           fi
         done
         exit $ERR

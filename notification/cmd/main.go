@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -28,6 +29,13 @@ func init() {
 }
 
 func main() {
+	// os.Exit не выполняет отложенные вызовы, поэтому вся работа вынесена в run
+	os.Exit(run())
+}
+
+// run возвращает код выхода процесса: ненулевой при ошибке, чтобы оркестратор (Docker restart policy)
+// и мониторинг видели сбой, а не штатное завершение.
+func run() int {
 	appCtx, appCancel := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer appCancel()
 	defer gracefulShutdown()
@@ -37,14 +45,16 @@ func main() {
 	a, err := app.New(appCtx)
 	if err != nil {
 		logger.Error(appCtx, "❌ Не удалось создать приложение", zap.Error(err))
-		return
+		return 1
 	}
 
 	err = a.Run(appCtx)
 	if err != nil {
 		logger.Error(appCtx, "❌ Ошибка при работе приложения", zap.Error(err))
-		return
+		return 1
 	}
+
+	return 0
 }
 
 func gracefulShutdown() {

@@ -12,7 +12,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.opentelemetry.io/otel"
-	"go.uber.org/zap"
 
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/api/health"
 	customMiddleware "github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/api/middleware"
@@ -21,6 +20,7 @@ import (
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/platform/pkg/logger"
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/platform/pkg/metrics"
 	platformHTTPMiddleware "github.com/aidar-khabibullin/MSA_Rocket_Factory/platform/pkg/middleware/http"
+	"github.com/aidar-khabibullin/MSA_Rocket_Factory/platform/pkg/runner"
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/platform/pkg/tracing"
 	orderV1 "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/openapi/order/v1"
 )
@@ -140,17 +140,19 @@ func New(ctx context.Context) (*App, error) {
 }
 
 func (a *App) Run(ctx context.Context) error {
-	// Запускаем Kafka Consumer в горутине только если не отключен для тестов
-	if os.Getenv("SKIP_KAFKA_CONSUMER") != "true" {
-		go func() {
-			err := a.diContainer.ShipAssembledConsumer(ctx).RunConsumer(ctx)
-			if err != nil {
-				logger.Error(ctx, "❌ Ошибка при работе Kafka Consumer", zap.Error(err))
-			}
-		}()
+	tasks := []runner.Task{
+		{Name: "HTTP server", Run: a.runHTTPServer},
 	}
 
-	return a.runHTTPServer(ctx)
+	// Kafka Consumer запускается только если не отключен для тестов
+	if os.Getenv("SKIP_KAFKA_CONSUMER") != "true" {
+		// Без консьюмера заказы никогда не станут ASSEMBLED, поэтому его падение роняет весь сервис,
+		// и Docker (restart: unless-stopped) перезапускает его. Раньше ошибка только логировалась,
+		// а HTTP-сервер продолжал работать.
+		tasks = append(tasks, runner.ConsumerTask("ShipAssembled Consumer", a.diContainer.ShipAssembledConsumer(ctx)))
+	}
+
+	return runner.Run(ctx, tasks...)
 }
 
 func (a *App) initDeps(ctx context.Context) error {
@@ -315,10 +317,30 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 func (a *App) runHTTPServer(ctx context.Context) error {
 	logger.Info(ctx, fmt.Sprintf("🚀 HTTP Order service server listening on %s", config.AppConfig().HTTP.Address()))
 
-	err := a.httpServer.ListenAndServe()
-	if err != nil && !errors.Is(err, http.ErrServerClosed) {
-		return err
-	}
+	errCh := make(chan error, 1)
+	go func() {
+		errCh <- a.httpServer.ListenAndServe()
+	}()
 
-	return nil
+	select {
+	case err := <-errCh:
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			return err
+		}
+
+		return nil
+	case <-ctx.Done():
+		// Контекст отменён (сигнал или падение соседней задачи) - останавливаем сервер корректно.
+		// WithoutCancel нужен, потому что ctx уже отменён и Shutdown сразу бы прервался.
+		shutdownCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+		defer cancel()
+
+		if err := a.httpServer.Shutdown(shutdownCtx); err != nil {
+			return err
+		}
+
+		<-errCh
+
+		return nil
+	}
 }

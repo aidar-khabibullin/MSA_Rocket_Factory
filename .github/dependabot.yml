@@ -1,0 +1,44 @@
+version: 2
+updates:
+  # Go-модули: у каждого сервиса свой go.mod
+  - package-ecosystem: gomod
+    directories:
+      - /backend/assembly
+      - /backend/iam
+      - /backend/inventory
+      - /backend/notification
+      - /backend/order
+      - /backend/payment
+      - /backend/platform
+      - /backend/shared
+    schedule:
+      interval: weekly
+    groups:
+      go-minor-and-patch:
+        update-types: [minor, patch]
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    groups:
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  - package-ecosystem: docker
+    directories:
+      - /deploy/docker/assembly
+      - /deploy/docker/iam
+      - /deploy/docker/inventory
+      - /deploy/docker/notification
+      - /deploy/docker/order
+      - /deploy/docker/payment
+    schedule:
+      interval: weekly

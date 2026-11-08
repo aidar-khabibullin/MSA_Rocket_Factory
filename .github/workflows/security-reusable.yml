@@ -1,0 +1,94 @@
+name: Security Reusable
+
+on:
+  workflow_call:
+    inputs:
+      modules:
+        required: true
+        type: string
+      go-version:
+        required: true
+        type: string
+
+jobs:
+  govulncheck:
+    name: govulncheck (Go-зависимости)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - name: 🛠 Set up Go
+        uses: actions/setup-go@v5.4.0
+        with:
+          go-version: ${{ inputs.go-version }}
+
+      - name: 🔎 Run govulncheck for every module
+        env:
+          MODULES: ${{ inputs.modules }}
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
+          status=0
+          for module in $MODULES; do
+            echo "::group::govulncheck $module"
+            (cd "backend/$module" && "$(go env GOPATH)/bin/govulncheck" ./...) || status=1
+            echo "::endgroup::"
+          done
+          exit $status
+
+  gitleaks:
+    name: gitleaks (секреты в истории)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: 🔎 Scan for secrets
+        uses: gitleaks/gitleaks-action@v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  npm-audit:
+    name: npm audit (зависимости фронтенда)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - name: 🛠 Set up Node.js
+        uses: actions/setup-node@v4.4.0
+        with:
+          node-version: 22
+
+      - name: 🔎 Audit production dependencies
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high
+
+  trivy:
+    name: Trivy (конфигурации Dockerfile и compose)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: 📦 Checkout code
+        uses: actions/checkout@v4.2.2
+
+      - name: 🔎 Scan IaC misconfigurations
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          scan-ref: deploy
+          severity: HIGH,CRITICAL
+          exit-code: "1"

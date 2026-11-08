@@ -1,7 +1,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { SWRConfig } from 'swr'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import { useSessionStore } from '@/modules/auth'
 
@@ -18,15 +18,16 @@ const order = (status: string) => ({
 const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200 })
 
 function renderPage() {
+  // Свежий клиент на каждый тест: иначе кэш делится данными между тестами.
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   render(
-    // Свежий кэш на каждый тест: SWR иначе делится данными между тестами.
-    <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
+    <QueryClientProvider client={client}>
       <MemoryRouter initialEntries={['/orders/o1']}>
         <Routes>
           <Route path="/orders/:orderId" element={<OrderPage />} />
         </Routes>
       </MemoryRouter>
-    </SWRConfig>,
+    </QueryClientProvider>,
   )
 }
 

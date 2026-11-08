@@ -1,4 +1,4 @@
-import useSWR from 'swr'
+import { useQuery } from '@tanstack/react-query'
 
 import type { ServiceStatus } from '../model/service-status'
 import { systemApi } from '../repository/system.api'
@@ -18,16 +18,16 @@ export interface ServiceHealth {
 
 /**
  * Опрос раз в 30 секунд, пока вкладка видна. Баннер и подвал вызывают хук независимо,
- * но SWR дедуплицирует запросы: на сервер уходит один.
+ * но TanStack Query дедуплицирует запросы: на сервер уходит один.
  */
 export function useServiceStatus(): ServiceHealth {
-  const { data, error, isValidating, mutate } = useSWR(
-    systemKeys.health,
-    async () => ({ ...(await systemApi.health()), checkedAt: new Date() }),
-    { refreshInterval: POLL_INTERVAL_MS, shouldRetryOnError: false },
-  )
+  const { data, isError, isFetching, refetch } = useQuery({
+    queryKey: systemKeys.health,
+    queryFn: async () => ({ ...(await systemApi.health()), checkedAt: new Date() }),
+    refetchInterval: POLL_INTERVAL_MS,
+  })
 
-  const isGatewayDown = error !== undefined
+  const isGatewayDown = isError
   const services = data?.services
 
   return {
@@ -35,7 +35,7 @@ export function useServiceStatus(): ServiceHealth {
     checkedAt: data?.checkedAt,
     isGatewayDown,
     isDegraded: isGatewayDown || (services?.some((service) => !service.ok) ?? false),
-    isChecking: isValidating,
-    refresh: () => void mutate(),
+    isChecking: isFetching,
+    refresh: () => void refetch(),
   }
 }

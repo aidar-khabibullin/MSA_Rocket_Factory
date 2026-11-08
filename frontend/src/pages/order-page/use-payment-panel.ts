@@ -25,16 +25,16 @@ export function usePaymentPanel(orderUuid: string) {
   return {
     method,
     setMethod,
-    isPaying: pay.isMutating,
-    isCancelling: cancel.isMutating,
-    isBusy: pay.isMutating || cancel.isMutating,
+    isPaying: pay.isPending,
+    isCancelling: cancel.isPending,
+    isBusy: pay.isPending || cancel.isPending,
     error: pay.error ?? cancel.error,
     isCancelDialogOpen,
     setCancelDialogOpen,
-    payOrder: () => run(() => pay.trigger(method), t('pay.paid')),
+    payOrder: () => run(() => pay.mutateAsync(method), t('pay.paid')),
     // Окно закрываем в любом случае: при ошибке она видна в панели, а не за затемнением.
     confirmCancel: async () => {
-      await run(() => cancel.trigger(), t('pay.cancelled'))
+      await run(() => cancel.mutateAsync(), t('pay.cancelled'))
       setCancelDialogOpen(false)
     },
   }

@@ -24,7 +24,7 @@ export function useCatalogPage() {
   const selected = useCartStore((state) => state.selected)
   const toggle = useCartStore((state) => state.toggle)
   const clear = useCartStore((state) => state.clear)
-  const { trigger: createOrder, isMutating, error: createError } = useCreateOrder()
+  const { mutateAsync: createOrder, isPending: isCreating, error: createError } = useCreateOrder()
 
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<CategoryKey | null>(null)
@@ -71,7 +71,7 @@ export function useCatalogPage() {
     resetFilters,
     loadError,
     createError,
-    isCreating: isMutating,
+    isCreating,
     isLoading: parts === undefined && !loadError,
     isFiltered: query.trim() !== '' || category !== null,
   }

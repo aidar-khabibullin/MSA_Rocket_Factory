@@ -1,7 +1,7 @@
 # AGENTS.md: фронтенд Rocket Factory
 
 ## Стек и запуск
-- React 19 + TypeScript (strict) + Vite + HeroUI v3 (Tailwind v4). Серверные данные: SWR, клиентское состояние: Zustand.
+- React 19 + TypeScript (strict) + Vite + HeroUI v3 (Tailwind v4). Серверные данные: TanStack Query, клиентское состояние: Zustand.
 - Команды (из `frontend/`): `npm run dev`, `npm run typecheck`, `npm run lint` (oxlint), `npm test` (vitest), `npm run build`.
   Из корня репозитория: `task frontend:check` (типы, линтер, тесты), `task web` (BFF + фронтенд).
 - Dev-сервер проксирует `/api/auth`, `/api/parts`, `/api/health` на BFF (`:8095`) и `/api/v1` на `order` (`:8080`), см. `vite.config.ts`.
@@ -15,12 +15,12 @@
 - Модули не образуют циклов. Если экрану нужны два взаимозависимых модуля, он живёт в `pages/` (так устроен `catalog-page`).
 - Если правило мешает, переносите логику вниз по слоям или расширяйте публичный API модуля. Не отключайте правило.
 - Имена файлов и папок в `src/` только kebab-case (`unicorn/filename-case`).
-- Структура модуля: `components/`, `hooks/` (SWR), `model/` (чистая логика и типы, без React и сети), `repository/` (API, DTO, адаптеры, ключи SWR), `services/`, `store/` (Zustand), `locales/`. Пустые папки не создавайте.
+- Структура модуля: `components/`, `hooks/` (TanStack Query), `model/` (чистая логика и типы, без React и сети), `repository/` (API, DTO, адаптеры, ключи TanStack Query), `services/`, `store/` (Zustand), `locales/`. Пустые папки не создавайте.
 
 ## Данные
 - Формат бэкенда (snake_case) живёт только в `repository/`: `*.dto.ts` описывает ответ, `*.adapter.ts` приводит его к модели (camelCase), `*.api.ts` возвращает уже модель. UI и хуки DTO не видят.
-- Ключи SWR лежат рядом с репозиторием модуля (`*.keys.ts`).
-- Сессия: `modules/auth` (`useRequiredSession`, `signOut`). 401 обрабатывает `SWRConfig` в `app/app.tsx`; отдельную логику выхода не добавляйте.
+- Ключи TanStack Query лежат рядом с репозиторием модуля (`*.keys.ts`).
+- Сессия: `modules/auth` (`useRequiredSession`, `signOut`). 401 обрабатывает `onUnauthorized` (`common/api/query-client.ts`, подключается в `app/app.tsx`); отдельную логику выхода не добавляйте.
 
 ## Локализация (i18n)
 - `i18next` + `react-i18next`, языки `ru` (по умолчанию) и `en`. Словари вшиты в бандл, инициализация синхронная: `common/i18n`.

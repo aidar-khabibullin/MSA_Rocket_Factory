@@ -2,7 +2,7 @@
 
 Каталог деталей и корзина.
 
-- `repository/`: `GET /api/parts`; `PartDto` → `Part` через `part.adapter.ts`; ключи SWR.
+- `repository/`: `GET /api/parts`; `PartDto` → `Part` через `part.adapter.ts`; ключи TanStack Query.
 - `hooks/use-parts.ts`: `useParts` (кэш на всё приложение) и `usePartsIndex` (поиск по UUID за O(1)).
 - `store/cart.store.ts`: корзина в Zustand (в памяти), очищается при выходе.
 - `model/`: категории, фильтрация, уровни остатка.

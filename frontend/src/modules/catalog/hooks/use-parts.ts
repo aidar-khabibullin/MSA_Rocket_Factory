@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import useSWR from 'swr'
+import { useQuery } from '@tanstack/react-query'
 
 import { useRequiredSession } from '@/modules/auth'
 
@@ -10,9 +10,11 @@ import { catalogKeys } from '../repository/catalog.keys'
 /** Каталог меняется редко: один запрос на всё приложение, общий для каталога, заказов и состава заказа. */
 export function useParts() {
   const { sessionUuid } = useRequiredSession()
-  return useSWR(catalogKeys.parts(sessionUuid), ([, session]) => catalogApi.parts(session), {
-    revalidateOnFocus: false,
-    dedupingInterval: 5 * 60_000,
+  return useQuery({
+    queryKey: catalogKeys.parts(sessionUuid),
+    queryFn: () => catalogApi.parts(sessionUuid),
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60_000,
   })
 }
 

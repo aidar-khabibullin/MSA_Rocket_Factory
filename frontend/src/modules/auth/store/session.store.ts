@@ -1,4 +1,4 @@
-import { mutate } from 'swr'
+import { queryClient } from '@/common/api/query-client'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
@@ -31,8 +31,8 @@ export const useSessionStore = create<SessionState>()(
       signIn: (session) => set({ session }),
       signOut: () => {
         set({ session: null })
-        // Кэш SWR принадлежит пользователю: после выхода его данные не должны остаться в памяти.
-        void mutate(() => true, undefined, { revalidate: false })
+        // Кэш запросов принадлежит пользователю: после выхода его данные не должны остаться в памяти.
+        queryClient.clear()
       },
     }),
     {

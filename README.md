@@ -10,6 +10,17 @@
 
 > **Примечание:** Покрытие кода рассчитывается только для бизнес-логики (пакеты `internal/`), исключая `mocks`, `test` пакеты и `main.go` файлы.
 
+## Быстрый старт
+
+```bash
+task up-all   # инфраструктура и все сервисы (первый запуск собирает образы, это несколько минут)
+task web      # фронтенд на http://localhost:5173 (API через Envoy на :8085)
+```
+
+Дальше: зарегистрироваться на http://localhost:5173, выбрать детали, создать и оплатить заказ. Статус сменится
+`PENDING_PAYMENT` → `PAID` → `ASSEMBLED`. Трассы смотрите в Jaeger, метрики в Grafana (адреса в таблице ниже).
+Остановка: `task down-all`. Нужны Go, Docker, [Task](https://taskfile.dev/installation/) и Node.js (подробнее в разделе «Требования»).
+
 ## Описание
 
 Проект: микросервисная система «Фабрика ракет» на Go (монорепозиторий с go.work).
@@ -88,10 +99,14 @@ task down-all    # остановить и удалить контейнеры
 | Prometheus | http://localhost:9090 |
 | Jaeger | http://localhost:16686 |
 | Kafka UI | http://localhost:8090 |
+| Envoy (API для фронтенда) | http://localhost:8085 |
+| Фронтенд (`task web`) | http://localhost:5173 |
+
+Логин и пароль Grafana по умолчанию: `admin` / `administrator` (см. `deploy/env/.env.template`).
 
 Описание метрик и дашбордов: [docs/metrics.md](docs/metrics.md).
 
-Архитектурные решения и известные ограничения: [docs/architecture.md](docs/architecture.md).
+Архитектурные решения и известные ограничения: [docs/architecture.md](docs/architecture.md). Все документы, PRD и планы фич: [docs/README.md](docs/README.md).
 
 Нагрузочный тест и трассировка: [docs/load-testing.md](docs/load-testing.md).
 
@@ -117,5 +132,25 @@ task mockery:gen     # генерация моков
 
 ## CI
 
-GitHub Actions (`.github/workflows`): линтер, unit- и интеграционные тесты и отчёт о покрытии (публикуется на GitHub Pages).
+GitHub Actions (`.github/workflows`):
+
+- **Go:** golangci-lint, unit- и интеграционные тесты, отчёт о покрытии (публикуется на GitHub Pages).
+- **Фронтенд:** typecheck, lint, тесты и сборка.
+- **Безопасность:** `govulncheck` для всех Go-модулей, `gitleaks` (секреты), `npm audit` и Trivy для Dockerfile и compose.
+
 Версии Go и инструментов берутся из `Taskfile.yml`. Зависимости обновляет Dependabot (`.github/dependabot.yml`).
+
+## Надёжность и безопасность
+
+- **Health-проверки.** gRPC-сервисы (`iam`, `inventory`, `payment`) отдают стандартный `grpc.health.v1`, `order` отдаёт `GET /health`;
+  docker compose проверяет их через `healthcheck` (`docker ps` показывает `healthy`). У `assembly` и `notification` нет входящего
+  порта: это Kafka-потребители, их состояние видно по метрикам и логам.
+- **Envoy** ограничивает частоту запросов (429) и размер тела (413); перебор паролей ограничивает `iam`.
+- **TLS** в compose не включён, схема для продакшена описана в [docs/architecture.md](docs/architecture.md#22-tls).
+- Об уязвимостях сообщайте по [SECURITY.md](SECURITY.md).
+
+## Участие и лицензия
+
+Правила работы с репозиторием: [CONTRIBUTING.md](CONTRIBUTING.md). Лицензия: [MIT](LICENSE).
+
+> Каталоги `.agents/` и `.claude/skills/` содержат скиллы для AI-ассистента и к коду проекта не относятся (см. [.agents/README.md](.agents/README.md)).

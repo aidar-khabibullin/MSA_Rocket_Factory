@@ -14,10 +14,6 @@ jobs:
   govulncheck:
     name: govulncheck (Go-зависимости)
     runs-on: ubuntu-latest
-    # Отчётный режим: на Go 1.24 и текущих версиях grpc/otel/x/net находятся десятки известных уязвимостей.
-    # Пока зависимости и Go не обновлены, джоб показывает их в логе, но не краснит CI.
-    # После обновления уберите continue-on-error, чтобы новые уязвимости блокировали merge.
-    continue-on-error: true
     permissions:
       contents: read
 
@@ -33,15 +29,22 @@ jobs:
       - name: 🔎 Run govulncheck for every module
         env:
           MODULES: ${{ inputs.modules }}
+          # Отчётный режим: на Go 1.24 и текущих версиях grpc/otel/x/net находятся десятки известных уязвимостей.
+          # Пока зависимости и Go не обновлены, находки выводятся предупреждениями (warning), а джоб остаётся зелёным.
+          # После обновления поставьте "true", чтобы новые уязвимости блокировали merge.
+          GOVULNCHECK_STRICT: "false"
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@v1.1.4
           status=0
           for module in $MODULES; do
             echo "::group::govulncheck $module"
-            (cd "backend/$module" && "$(go env GOPATH)/bin/govulncheck" ./...) || status=1
+            if ! (cd "backend/$module" && "$(go env GOPATH)/bin/govulncheck" ./...); then
+              echo "::warning title=govulncheck::В модуле $module найдены уязвимости, подробности в логе"
+              status=1
+            fi
             echo "::endgroup::"
           done
-          exit $status
+          if [ "$GOVULNCHECK_STRICT" = "true" ]; then exit $status; fi
 
   gitleaks:
     name: gitleaks (секреты в истории)

@@ -31,7 +31,8 @@ const (
 type AuthServiceClient interface {
 	// Login - Аутентификация пользователя
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
-	// Whoami - Получение информации о текущей сессии
+	// Whoami - Получение информации о текущей сессии.
+	// Через HTTP-шлюз сессия передаётся заголовком Session-Uuid (gRPC-metadata session-uuid), поле запроса остаётся пустым.
 	Whoami(ctx context.Context, in *WhoamiRequest, opts ...grpc.CallOption) (*WhoamiResponse, error)
 }
 
@@ -71,7 +72,8 @@ func (c *authServiceClient) Whoami(ctx context.Context, in *WhoamiRequest, opts 
 type AuthServiceServer interface {
 	// Login - Аутентификация пользователя
 	Login(context.Context, *LoginRequest) (*LoginResponse, error)
-	// Whoami - Получение информации о текущей сессии
+	// Whoami - Получение информации о текущей сессии.
+	// Через HTTP-шлюз сессия передаётся заголовком Session-Uuid (gRPC-metadata session-uuid), поле запроса остаётся пустым.
 	Whoami(context.Context, *WhoamiRequest) (*WhoamiResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }

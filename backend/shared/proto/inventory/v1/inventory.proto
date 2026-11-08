@@ -3,6 +3,7 @@ syntax = "proto3";
 // Package inventory.v1 содержит API для хранения и предоставления информации о деталях для сборки космических кораблей.
 package inventory.v1;
 
+import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 
 option go_package = "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/proto/inventory/v1;inventory_v1";
@@ -14,7 +15,13 @@ service InventoryService {
   rpc GetPart(GetPartRequest) returns (GetPartResponse);
 
   // ListParts получает список деталей
-  rpc ListParts(ListPartsRequest) returns (ListPartsResponse);
+  // Через HTTP-шлюз вызывается как GET /api/parts: фильтр передаётся параметрами запроса (filter.category=...),
+  // без параметров возвращаются все детали. Сессия идёт заголовком Session-Uuid (gRPC-metadata session-uuid).
+  rpc ListParts(ListPartsRequest) returns (ListPartsResponse) {
+    option (google.api.http) = {
+      get: "/api/parts"
+    };
+  }
 
   // ReserveParts резервирует детали под заказ: уменьшает остаток каждой детали на её количество в заказе.
   // Операция идемпотентна по order_uuid и атомарна: если хотя бы одной детали не хватает, не резервируется ничего.

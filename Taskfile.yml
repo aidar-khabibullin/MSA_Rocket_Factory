@@ -9,6 +9,9 @@ vars:
   BUF_VERSION: '1.53.0'
   PROTOC_GEN_GO_VERSION: 'v1.36.6'
   PROTOC_GEN_GO_GRPC_VERSION: 'v1.5.1'
+  PROTOC_GEN_GRPC_GATEWAY_VERSION: 'v2.27.1'
+  PROTOC_GEN_OPENAPIV2_VERSION: 'v2.27.1'
+  PROTOC_GEN_VALIDATE_VERSION: 'v1.2.1'
   OGEN_VERSION: 'v1.12.0'
   YQ_VERSION: 'v4.45.2'
   MOCKERY_VERSION: 'v2.53.3'
@@ -25,6 +28,9 @@ vars:
   YQ: '{{.BIN_DIR}}/yq'
   PROTOC_GEN_GO: '{{.BIN_DIR}}/protoc-gen-go'
   PROTOC_GEN_GO_GRPC: '{{.BIN_DIR}}/protoc-gen-go-grpc'
+  PROTOC_GEN_GRPC_GATEWAY: '{{.BIN_DIR}}/protoc-gen-grpc-gateway'
+  PROTOC_GEN_OPENAPIV2: '{{.BIN_DIR}}/protoc-gen-openapiv2'
+  PROTOC_GEN_VALIDATE: '{{.BIN_DIR}}/protoc-gen-validate'
   MOCKERY: "{{.BIN_DIR}}/mockery"
   GRPCURL: '{{.BIN_DIR}}/grpcurl'
   ENVSUBST: '{{.BIN_DIR}}/envsubst'
@@ -170,6 +176,18 @@ tasks:
           echo '📦 Installing protoc-gen-go-grpc...'
           GOBIN={{.BIN_DIR}} go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@{{.PROTOC_GEN_GO_GRPC_VERSION}}
         }
+        [ -f {{.PROTOC_GEN_GRPC_GATEWAY}} ] || {
+          echo '📦 Installing protoc-gen-grpc-gateway...'
+          GOBIN={{.BIN_DIR}} go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@{{.PROTOC_GEN_GRPC_GATEWAY_VERSION}}
+        }
+        [ -f {{.PROTOC_GEN_OPENAPIV2}} ] || {
+          echo '📦 Installing protoc-gen-openapiv2...'
+          GOBIN={{.BIN_DIR}} go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@{{.PROTOC_GEN_OPENAPIV2_VERSION}}
+        }
+        [ -f {{.PROTOC_GEN_VALIDATE}} ] || {
+          echo '📦 Installing protoc-gen-validate...'
+          GOBIN={{.BIN_DIR}} go install github.com/envoyproxy/protoc-gen-validate@{{.PROTOC_GEN_VALIDATE_VERSION}}
+        }
 
   proto:gen:
     deps: [ install-buf, proto:install-plugins, proto:lint ]
@@ -184,6 +202,13 @@ tasks:
     dir: '{{.BACKEND_DIR}}/shared/proto'
     cmds:
       - '{{.BUF}} lint'
+
+  proto:descriptor:
+    deps: [ install-buf ]
+    desc: "Собирает дескриптор proto для Envoy (gRPC-JSON transcoder) в deploy/compose/envoy/proto.pb"
+    dir: '{{.BACKEND_DIR}}/shared/proto'
+    cmds:
+      - '{{.BUF}} build --as-file-descriptor-set --path iam --path inventory -o ../../../deploy/compose/envoy/proto.pb'
 
   redocly-cli:install:
     desc: Установить локально Redocly CLI
@@ -482,6 +507,26 @@ tasks:
       - echo "[task] 🛑 Останавливаем IAM с зависимостями"
       - docker compose down --volumes
 
+  up-envoy:
+    desc: Поднять Envoy, единую точку входа для фронтенда (REST/JSON -> gRPC)
+    deps: [ proto:descriptor ]
+    dir: deploy/compose/envoy
+    cmds:
+      - echo "[task] 📦 Поднимаем Envoy"
+      - docker compose up --detach --force-recreate
+
+  down-envoy:
+    desc: Остановить и удалить Envoy
+    dir: deploy/compose/envoy
+    cmds:
+      - echo "[task] 🛑 Останавливаем Envoy"
+      - docker compose down
+
+  envoy:test:
+    desc: "Smoke-тест Envoy: маршруты, ошибки, CORS, ограничитель входа (нужен поднятый стек: task up-all)"
+    cmds:
+      - bash scripts/envoy/smoke.sh
+
   up-all:
     desc: Поднять все сервисы по очереди вместе с зависимостями
     cmds:
@@ -492,10 +537,12 @@ tasks:
       - task up-order
       - task up-assembly
       - task up-notification
+      - task up-envoy
 
   down-all:
     desc: Остановить и удалить все сервисы по очереди вместе с зависимостями
     cmds:
+      - task down-envoy
       - task down-order
       - task down-payment
       - task down-inventory

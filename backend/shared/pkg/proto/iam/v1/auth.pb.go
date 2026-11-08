@@ -7,6 +7,7 @@
 package iam_v1
 
 import (
+	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -227,7 +228,7 @@ var File_iam_v1_auth_proto protoreflect.FileDescriptor
 
 const file_iam_v1_auth_proto_rawDesc = "" +
 	"\n" +
-	"\x11iam/v1/auth.proto\x12\x06iam.v1\x1a\x13iam/v1/common.proto\"@\n" +
+	"\x11iam/v1/auth.proto\x12\x06iam.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x13iam/v1/common.proto\"@\n" +
 	"\fLoginRequest\x12\x14\n" +
 	"\x05login\x18\x01 \x01(\tR\x05login\x12\x1a\n" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\"2\n" +
@@ -237,10 +238,10 @@ const file_iam_v1_auth_proto_rawDesc = "" +
 	"\fsession_uuid\x18\x01 \x01(\tR\vsessionUuid\"]\n" +
 	"\x0eWhoamiResponse\x12)\n" +
 	"\asession\x18\x01 \x01(\v2\x0f.iam.v1.SessionR\asession\x12 \n" +
-	"\x04user\x18\x02 \x01(\v2\f.iam.v1.UserR\x04user2|\n" +
-	"\vAuthService\x124\n" +
-	"\x05Login\x12\x14.iam.v1.LoginRequest\x1a\x15.iam.v1.LoginResponse\x127\n" +
-	"\x06Whoami\x12\x15.iam.v1.WhoamiRequest\x1a\x16.iam.v1.WhoamiResponseBPZNgithub.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/proto/iam/v1;iam_v1b\x06proto3"
+	"\x04user\x18\x02 \x01(\v2\f.iam.v1.UserR\x04user2\xae\x01\n" +
+	"\vAuthService\x12P\n" +
+	"\x05Login\x12\x14.iam.v1.LoginRequest\x1a\x15.iam.v1.LoginResponse\"\x1a\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/api/auth/login\x12M\n" +
+	"\x06Whoami\x12\x15.iam.v1.WhoamiRequest\x1a\x16.iam.v1.WhoamiResponse\"\x14\x82\xd3\xe4\x93\x02\x0e\x12\f/api/auth/meBPZNgithub.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/proto/iam/v1;iam_v1b\x06proto3"
 
 var (
 	file_iam_v1_auth_proto_rawDescOnce sync.Once

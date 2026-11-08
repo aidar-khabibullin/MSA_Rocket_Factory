@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package iam.v1;
 
+import "google/api/annotations.proto";
 import "iam/v1/common.proto";
 
 option go_package = "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/proto/iam/v1;iam_v1";
@@ -9,9 +10,19 @@ option go_package = "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/
 // AuthService - Сервис аутентификации пользователей
 service AuthService {
   // Login - Аутентификация пользователя
-  rpc Login(LoginRequest) returns (LoginResponse);
-  // Whoami - Получение информации о текущей сессии
-  rpc Whoami(WhoamiRequest) returns (WhoamiResponse);
+  rpc Login(LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/api/auth/login"
+      body: "*"
+    };
+  }
+  // Whoami - Получение информации о текущей сессии.
+  // Через HTTP-шлюз сессия передаётся заголовком Session-Uuid (gRPC-metadata session-uuid), поле запроса остаётся пустым.
+  rpc Whoami(WhoamiRequest) returns (WhoamiResponse) {
+    option (google.api.http) = {
+      get: "/api/auth/me"
+    };
+  }
 }
 
 // LoginRequest - Запрос на аутентификацию

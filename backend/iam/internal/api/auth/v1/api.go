@@ -6,11 +6,13 @@ import (
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/iam/internal/api/converter"
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/iam/internal/model"
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/iam/internal/service"
+	grpcMiddleware "github.com/aidar-khabibullin/MSA_Rocket_Factory/platform/pkg/middleware/grpc"
 	iamV1 "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/proto/iam/v1"
 )
 
@@ -46,7 +48,7 @@ func (a *api) Login(ctx context.Context, req *iamV1.LoginRequest) (*iamV1.LoginR
 
 func (a *api) Whoami(ctx context.Context, req *iamV1.WhoamiRequest) (*iamV1.WhoamiResponse, error) {
 	// Парсим UUID сессии
-	sessionUUID, err := uuid.Parse(req.SessionUuid)
+	sessionUUID, err := uuid.Parse(sessionFromRequest(ctx, req))
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, "invalid session UUID")
 	}
@@ -70,4 +72,18 @@ func (a *api) Whoami(ctx context.Context, req *iamV1.WhoamiRequest) (*iamV1.Whoa
 		Session: converter.ToProtoSession(session),
 		User:    converter.ToProtoUser(user),
 	}, nil
+}
+
+// sessionFromRequest возвращает UUID сессии из поля запроса, а если оно пустое, из gRPC-metadata session-uuid.
+// HTTP-шлюз (Envoy) не умеет класть заголовок в поле запроса, поэтому передаёт сессию metadata, как и для остальных сервисов.
+func sessionFromRequest(ctx context.Context, req *iamV1.WhoamiRequest) string {
+	if req.GetSessionUuid() != "" {
+		return req.GetSessionUuid()
+	}
+	if md, ok := metadata.FromIncomingContext(ctx); ok {
+		if values := md.Get(grpcMiddleware.SessionUUIDMetadataKey); len(values) > 0 {
+			return values[0]
+		}
+	}
+	return ""
 }

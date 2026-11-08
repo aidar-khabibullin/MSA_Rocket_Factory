@@ -36,6 +36,8 @@ type InventoryServiceClient interface {
 	// GetPart получает информацию о детали по UUID
 	GetPart(ctx context.Context, in *GetPartRequest, opts ...grpc.CallOption) (*GetPartResponse, error)
 	// ListParts получает список деталей
+	// Через HTTP-шлюз вызывается как GET /api/parts: фильтр передаётся параметрами запроса (filter.category=...),
+	// без параметров возвращаются все детали. Сессия идёт заголовком Session-Uuid (gRPC-metadata session-uuid).
 	ListParts(ctx context.Context, in *ListPartsRequest, opts ...grpc.CallOption) (*ListPartsResponse, error)
 	// ReserveParts резервирует детали под заказ: уменьшает остаток каждой детали на её количество в заказе.
 	// Операция идемпотентна по order_uuid и атомарна: если хотя бы одной детали не хватает, не резервируется ничего.
@@ -101,6 +103,8 @@ type InventoryServiceServer interface {
 	// GetPart получает информацию о детали по UUID
 	GetPart(context.Context, *GetPartRequest) (*GetPartResponse, error)
 	// ListParts получает список деталей
+	// Через HTTP-шлюз вызывается как GET /api/parts: фильтр передаётся параметрами запроса (filter.category=...),
+	// без параметров возвращаются все детали. Сессия идёт заголовком Session-Uuid (gRPC-metadata session-uuid).
 	ListParts(context.Context, *ListPartsRequest) (*ListPartsResponse, error)
 	// ReserveParts резервирует детали под заказ: уменьшает остаток каждой детали на её количество в заказе.
 	// Операция идемпотентна по order_uuid и атомарна: если хотя бы одной детали не хватает, не резервируется ничего.

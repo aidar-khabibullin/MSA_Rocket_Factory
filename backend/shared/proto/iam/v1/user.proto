@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package iam.v1;
 
+import "google/api/annotations.proto";
 import "iam/v1/common.proto";
 
 option go_package = "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/proto/iam/v1;iam_v1";
@@ -9,7 +10,12 @@ option go_package = "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/
 // UserService - Сервис управления пользователями
 service UserService {
   // Register - Регистрация нового пользователя
-  rpc Register(RegisterRequest) returns (RegisterResponse);
+  rpc Register(RegisterRequest) returns (RegisterResponse) {
+    option (google.api.http) = {
+      post: "/api/auth/register"
+      body: "*"
+    };
+  }
   // GetUser - Получение информации о пользователе
   rpc GetUser(GetUserRequest) returns (GetUserResponse);
 }

@@ -1,0 +1,2 @@
+# Дескриптор proto для Envoy: собирается задачей `task proto:descriptor`
+proto.pb

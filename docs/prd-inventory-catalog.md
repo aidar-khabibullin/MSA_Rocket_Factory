@@ -15,7 +15,7 @@
 
 ## В скоупе
 
-- gRPC `InventoryService`: `GetPart`, `ListParts` (`shared/proto/inventory`, порт `:50051`).
+- gRPC `InventoryService`: `GetPart`, `ListParts` (`backend/shared/proto/inventory`, порт `:50051`).
 - Фильтр `ListParts` по UUID, названиям, категориям, странам производителей и тегам.
 - `ReserveParts` и `ReleaseParts`: атомарное и идемпотентное по заказу резервирование остатков; при нехватке хотя бы одной детали не резервируется ничего, `order` отвечает 409.
 - Категории: `ENGINE`, `FUEL`, `PORTHOLE`, `WING`; неизвестное значение отображается как `UNKNOWN`.

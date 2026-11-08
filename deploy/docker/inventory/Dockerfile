@@ -8,9 +8,9 @@ RUN apk add --no-cache git
 WORKDIR /app
 
 # Копируем go.mod и go.sum файлы для кеширования зависимостей
-COPY inventory/go.mod inventory/go.sum ./inventory/
-COPY shared/go.mod shared/go.sum ./shared/
-COPY platform/go.mod platform/go.sum ./platform/
+COPY backend/inventory/go.mod backend/inventory/go.sum ./inventory/
+COPY backend/shared/go.mod backend/shared/go.sum ./shared/
+COPY backend/platform/go.mod backend/platform/go.sum ./platform/
 
 # Загружаем зависимости
 WORKDIR /app/inventory
@@ -18,9 +18,9 @@ RUN go mod download
 
 # Возвращаемся в корневую директорию и копируем исходный код
 WORKDIR /app
-COPY inventory/ ./inventory/
-COPY shared/ ./shared/
-COPY platform/ ./platform/
+COPY backend/inventory/ ./inventory/
+COPY backend/shared/ ./shared/
+COPY backend/platform/ ./platform/
 
 # Скачиваем grpc-health-probe — это утилита для проверки состояния gRPC-сервиса
 ADD https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.4.37/grpc_health_probe-linux-amd64 ./grpc-health-probe

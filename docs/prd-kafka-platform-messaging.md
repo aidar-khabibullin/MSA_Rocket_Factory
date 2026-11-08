@@ -16,8 +16,8 @@
 
 ## В скоупе
 
-- Пакет `platform/pkg/kafka`: интерфейсы, `Message`, producer (`sarama.SyncProducer`), consumer group с цепочками middleware.
-- События в protobuf (`shared/proto/events/v1`): `order.paid`, `ship.assembled`, у каждого есть `event_uuid`.
+- Пакет `backend/platform/pkg/kafka`: интерфейсы, `Message`, producer (`sarama.SyncProducer`), consumer group с цепочками middleware.
+- События в protobuf (`backend/shared/proto/events/v1`): `order.paid`, `ship.assembled`, у каждого есть `event_uuid`.
 - Конфигурация producer: `acks=all`, 3 повтора отправки.
 - Consumer отмечает offset (`MarkMessage`) только после успешной обработки (at-least-once).
 - Middleware: трассировка, метрики Kafka, логирование.

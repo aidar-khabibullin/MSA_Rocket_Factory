@@ -18,12 +18,12 @@
 
 ## В скоупе
 
-- HTTP API (OpenAPI, `shared/api/order/v1`): `POST /api/v1/orders`, `GET /api/v1/orders/{order_uuid}`, `POST /api/v1/orders/{order_uuid}/pay`, `POST /api/v1/orders/{order_uuid}/cancel`.
+- HTTP API (OpenAPI, `backend/shared/api/order/v1`): `POST /api/v1/orders`, `GET /api/v1/orders/{order_uuid}`, `POST /api/v1/orders/{order_uuid}/pay`, `POST /api/v1/orders/{order_uuid}/cancel`.
 - Валидация создания: пользователь указан, список деталей не пуст и не больше 1000; детали запрашиваются у `inventory` (gRPC).
 - Оплата через `payment` (gRPC); запись результата условная: `UPDATE ... WHERE status = 'PENDING_PAYMENT'`.
 - Публикация `order.paid` в Kafka (`acks=all`, 3 повтора отправки).
 - Потребление `ship.assembled` и перевод заказа в `ASSEMBLED`.
-- Хранение в PostgreSQL (`order/migrations`), in-memory репозиторий для тестов.
+- Хранение в PostgreSQL (`backend/order/migrations`), in-memory репозиторий для тестов.
 - Health-check, трассировка (OpenTelemetry), бизнес-метрики заказов (см. [metrics.md](metrics.md)).
 
 ## Не в скоупе

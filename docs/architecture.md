@@ -6,7 +6,7 @@
 ## 1. Почему Kafka между `order` и `assembly`
 
 Сборка ракеты — долгая операция (в `assembly` она имитируется задержкой 5–15 секунд,
-`assembly/internal/service/assembly/assembly.go`). Если вызывать её синхронно из `order`,
+`backend/assembly/internal/service/assembly/assembly.go`). Если вызывать её синхронно из `order`,
 HTTP-запрос на оплату висел бы до конца сборки.
 
 Поэтому после оплаты `order` публикует событие `order.paid` и сразу отвечает клиенту.
@@ -43,14 +43,14 @@ HTTP-запрос на оплату висел бы до конца сборки
 
 - **Повторная оплата.** `PayOrder` оплачивает только заказ в статусе `PENDING_PAYMENT`;
   иначе возвращает `ErrOrderNotPayable`
-  (`order/internal/service/order/pay.go`). Это защищает от повторного списания и от оплаты
+  (`backend/order/internal/service/order/pay.go`). Это защищает от повторного списания и от оплаты
   отменённого заказа.
 - **Публикация.** Продюсер работает с `acks=all` и тремя повторами при ошибке отправки
-  (`order/internal/config/env/producer.go`), поэтому событие не теряется при смене лидера
+  (`backend/order/internal/config/env/producer.go`), поэтому событие не теряется при смене лидера
   партиции.
 - **Подтверждение чтения.** Consumer отмечает смещение (`MarkMessage`) только после
   успешной обработки
-  (`platform/pkg/kafka/consumer/group_handler.go`). Это гарантия **at-least-once**: после
+  (`backend/platform/pkg/kafka/consumer/group_handler.go`). Это гарантия **at-least-once**: после
   падения сообщение может прийти повторно, но не потеряется молча.
 - **Обработка `ship.assembled`.** Установка статуса `ASSEMBLED` повторяется безвредно:
   второй раз заказ получит тот же статус.
@@ -72,11 +72,11 @@ HTTP-запрос на оплату висел бы до конца сборки
   и только затем отправляет его в топик `<исходный топик>.dlq` с заголовками `x-original-topic`,
   `x-original-partition`, `x-original-offset`, `x-error`. Смещение сдвигается лишь после успешной обработки
   или записи в DLQ, поэтому одно сообщение больше не «пропускается» следующим
-  (`platform/pkg/kafka/consumer/resilience.go`). Если не удалась и запись в DLQ, consumer прекращает чтение
+  (`backend/platform/pkg/kafka/consumer/resilience.go`). Если не удалась и запись в DLQ, consumer прекращает чтение
   партиции без отметки смещения, и сообщение придёт заново. Разбор DLQ выполняется вручную, автоматического replay нет.
 - **Дедупликация по `event_uuid`** (`assembly`, `order`, `notification`): middleware проверяет Redis
   (`redis-events`), обрабатывает сообщение и после успеха записывает ключ с TTL 24 часа
-  (`platform/pkg/kafka/consumer/dedup.go`). Повторная доставка `order.paid` не запускает вторую сборку.
+  (`backend/platform/pkg/kafka/consumer/dedup.go`). Повторная доставка `order.paid` не запускает вторую сборку.
   Дедупликация включается переменной `REDIS_DEDUP_ADDR`; если она пуста, сервис работает как раньше.
 - **Если Redis недоступен**, обработка продолжается без проверки (fail-open): потерянное сообщение хуже дубликата,
   а `order` уже безвреден к повтору. Каждый такой случай считается в `kafka_dedup_store_errors_total`.
@@ -89,11 +89,11 @@ HTTP-запрос на оплату висел бы до конца сборки
 
 ## 4. Наблюдаемость
 
-- **Трассировка.** OpenTelemetry: HTTP-middleware (`platform/pkg/middleware/http/tracing.go`)
+- **Трассировка.** OpenTelemetry: HTTP-middleware (`backend/platform/pkg/middleware/http/tracing.go`)
   и спаны в сервисном слое (например, `order.service.pay_order`).
 - **Метрики.** Бизнес-метрики (заказы, оплаты, сборки) и метрики Kafka (producer/consumer)
   описаны в [metrics.md](metrics.md).
-- **Логи.** Общий структурированный логгер на zap в `platform/pkg/logger`.
+- **Логи.** Общий структурированный логгер на zap в `backend/platform/pkg/logger`.
 
 ## 5. Хранилища
 

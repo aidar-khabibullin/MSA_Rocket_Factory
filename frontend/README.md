@@ -5,13 +5,13 @@ React 19 + TypeScript (strict) + Vite + HeroUI v3 (Tailwind v4).
 ## Запуск
 
 ```
-task web            # BFF и фронтенд вместе (нужен поднятый бэкенд: task up-all)
+task web            # фронтенд (Envoy поднимается стеком) (нужен поднятый бэкенд: task up-all)
 task frontend:check # типы, линтер, тесты
 ```
 
 Каталог компонентов (Storybook, без бэкенда): `npm run storybook` → http://localhost:6006. Истории лежат рядом с компонентами (`*.stories.tsx`), тему и язык можно переключить на панели.
 
-Dev-сервер проксирует `/api/auth`, `/api/parts`, `/api/health` на BFF (`:8095`) и `/api/v1` на `order` (`:8080`).
+Dev-сервер проксирует весь `/api` на Envoy (`:8085`).
 
 ## Структура (FEOD)
 

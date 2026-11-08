@@ -20,6 +20,7 @@
 
 | Сервис | Назначение | Транспорт | Хранилище |
 |---|---|---|---|
+| `envoy` | Единая точка входа для браузера: REST/JSON → gRPC (`iam`, `inventory`), прокси в `order`, CORS | HTTP (`:8085`) | - |
 | `order` | Создание и оплата заказов | HTTP (OpenAPI, `:8080`), Kafka | PostgreSQL |
 | `inventory` | Каталог деталей | gRPC (`:50051`) | MongoDB |
 | `payment` | Оплата заказа | gRPC (`:50052`) | - |
@@ -28,6 +29,19 @@
 | `notification` | Уведомления пользователю (Telegram) | Kafka, gRPC-клиент к `iam` | - |
 
 Общий код: `platform/` (логгер, Kafka, middleware, трассировка, метрики) и `shared/` (protobuf/OpenAPI-контракты).
+
+### Поток запроса из браузера
+
+```
+Браузер ──HTTP /api──▶ Envoy (:8085) ──gRPC──▶ iam        (/api/auth/register · login · me)
+                           │         ──gRPC──▶ inventory  (/api/parts)
+                           └─────────HTTP────▶ order      (/api/v1/orders...)
+```
+
+Envoy переводит REST/JSON в gRPC по аннотациям `google.api.http` в proto (gRPC-JSON transcoder),
+передаёт сессию заголовком `Session-Uuid` и подставляет реальный адрес клиента в `x-forwarded-for`.
+Конфигурация: `deploy/compose/envoy/envoy.yaml`, проверка: `task envoy:test` (нужен поднятый стек).
+Dev-сервер фронтенда (`task web`) проксирует весь `/api` на Envoy. Подробности: [docs/architecture.md](docs/architecture.md).
 
 ### Поток заказа
 
@@ -64,7 +78,7 @@ task down-all    # остановить и удалить контейнеры
 значения по умолчанию берутся из `deploy/env/.env.template`, а `deploy/env/.env` и `deploy/compose/*/.env`
 в git не хранятся. Перед использованием вне локальной машины замените пароли и JWT-секреты.
 
-Отдельные сервисы: `task up-<service>` / `task down-<service>` (`inventory`, `payment`, `order`, `iam`, `assembly`, `notification`).
+Отдельные сервисы: `task up-<service>` / `task down-<service>` (`inventory`, `payment`, `order`, `iam`, `assembly`, `notification`, `envoy`).
 
 ### Инфраструктура (core)
 

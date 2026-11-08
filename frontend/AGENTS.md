@@ -3,8 +3,8 @@
 ## Стек и запуск
 - React 19 + TypeScript (strict) + Vite + HeroUI v3 (Tailwind v4). Серверные данные: TanStack Query, клиентское состояние: Zustand.
 - Команды (из `frontend/`): `npm run dev`, `npm run typecheck`, `npm run lint` (oxlint), `npm test` (vitest), `npm run build`.
-  Из корня репозитория: `task frontend:check` (типы, линтер, тесты), `task web` (BFF + фронтенд).
-- Dev-сервер проксирует `/api/auth`, `/api/parts`, `/api/health` на BFF (`:8095`) и `/api/v1` на `order` (`:8080`), см. `vite.config.ts`.
+  Из корня репозитория: `task frontend:check` (типы, линтер, тесты), `task web` (фронтенд; Envoy поднимается стеком).
+- Dev-сервер проксирует весь `/api` на Envoy (`:8085`), см. `vite.config.ts`.
 - Базовая линия: `typecheck`, `lint --deny-warnings`, `test` и `build` проходят без ошибок. Не оставляйте предупреждений линтера.
 
 ## Архитектура (FEOD): это проверяет линтер
@@ -19,7 +19,8 @@
 - Структура модуля: `components/`, `hooks/` (TanStack Query), `model/` (чистая логика и типы, без React и сети), `repository/` (API, DTO, адаптеры, ключи TanStack Query), `services/`, `store/` (Zustand), `locales/`. Пустые папки не создавайте.
 
 ## Данные
-- Формат бэкенда (snake_case) живёт только в `repository/`: `*.dto.ts` описывает ответ, `*.adapter.ts` приводит его к модели (camelCase), `*.api.ts` возвращает уже модель. UI и хуки DTO не видят.
+- Бэкенд отдаёт через Envoy proto-JSON: `snake_case`, `int64` строкой, вложенные сообщения, enum именем, ошибки `{"code","message","details"}`. `order` отдаёт собственный JSON. Сессия идёт заголовком `Session-Uuid` (`common/api/http.ts`).
+- Формат бэкенда живёт только в `repository/`: `*.dto.ts` описывает ответ, `*.adapter.ts` приводит его к модели (camelCase), `*.api.ts` возвращает уже модель. UI и хуки DTO не видят.
 - Ключи TanStack Query лежат рядом с репозиторием модуля (`*.keys.ts`).
 - Сессия: `modules/auth` (`useRequiredSession`, `signOut`). 401 обрабатывает `onUnauthorized` (`common/api/query-client.ts`, подключается в `app/app.tsx`); отдельную логику выхода не добавляйте.
 

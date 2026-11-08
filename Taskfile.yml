@@ -15,6 +15,7 @@ vars:
   GRPCURL_VERSION: 'v1.9.3'
   ENVSUBST_VERSION: 'v1.4.3'
 
+  BACKEND_DIR: 'backend'
   BIN_DIR: '{{.ROOT_DIR}}/bin'
   GOLANGCI_LINT: '{{.BIN_DIR}}/golangci-lint'
   GCI: '{{.BIN_DIR}}/gci'
@@ -32,13 +33,13 @@ vars:
   NODE_MODULES_DIR: '{{.ROOT_DIR}}/node_modules/.bin'
   REDOCLY: '{{.NODE_MODULES_DIR}}/redocly'
 
-  OPEN_API_ORDER_V1_BASE: '{{.ROOT_DIR}}/backend/shared/api/order/v1/order.openapi.yaml'
-  OPEN_API_ORDER_V1_BUNDLE: '{{.ROOT_DIR}}/backend/shared/api/bundles/order.openapi.v1.bundle.yaml'
+  OPEN_API_ORDER_V1_BASE: '{{.ROOT_DIR}}/{{.BACKEND_DIR}}/shared/api/order/v1/order.openapi.yaml'
+  OPEN_API_ORDER_V1_BUNDLE: '{{.ROOT_DIR}}/{{.BACKEND_DIR}}/shared/api/bundles/order.openapi.v1.bundle.yaml'
 
-  OPEN_API_FILES: '{{.ROOT_DIR}}/backend/shared/api/bundles'
+  OPEN_API_FILES: '{{.ROOT_DIR}}/{{.BACKEND_DIR}}/shared/api/bundles'
   COVERAGE_DIR: '{{.ROOT_DIR}}/coverage'
   COVERAGE_FILE: total.out
-  ORDER_MIGRATIONS_DIR: './backend/order/migrations'
+  ORDER_MIGRATIONS_DIR: './{{.BACKEND_DIR}}/order/migrations'
   POSTGRES_DSN: 'postgres://order-service-user:order-service-password@localhost:5432/order-service?sslmode=disable'
 
   MODULES: assembly inventory order payment platform iam notification
@@ -83,18 +84,18 @@ tasks:
         echo "🧼 Форматируем через gofumpt ..."
         
         for module in {{.MODULES}}; do
-          if [ -d "backend/$module" ]; then
+          if [ -d "{{.BACKEND_DIR}}/$module" ]; then
             echo "🧼 Форматируем $module"
-            find backend/$module -type f -name '*.go' ! -path '*/mocks/*' -exec {{.GOFUMPT}} -extra -w {} +
+            find {{.BACKEND_DIR}}/$module -type f -name '*.go' ! -path '*/mocks/*' -exec {{.GOFUMPT}} -extra -w {} +
           fi
         done
       - |
         echo "🎯 Сортируем импорты через gci ..."
         
         for module in {{.MODULES}}; do
-          if [ -d "backend/$module" ]; then
+          if [ -d "{{.BACKEND_DIR}}/$module" ]; then
             echo "🎯 Сортируем импорты в $module"
-            find backend/$module -type f -name '*.go' ! -path '*/mocks/*' -exec {{.GCI}} write -s standard -s default -s "prefix(github.com/aidar-khabibullin/MSA_Rocket_Factory)" {} +
+            find {{.BACKEND_DIR}}/$module -type f -name '*.go' ! -path '*/mocks/*' -exec {{.GCI}} write -s standard -s default -s "prefix(github.com/aidar-khabibullin/MSA_Rocket_Factory)" {} +
           fi
         done
 
@@ -136,9 +137,9 @@ tasks:
         ERR=0
         echo "🔍 Линтим все модули ..."
         for mod in {{.MODULES}}; do
-          if [ -d "backend/$mod" ]; then
+          if [ -d "{{.BACKEND_DIR}}/$mod" ]; then
             echo "🔍 Линтим $mod module"
-            {{.GOLANGCI_LINT}} run ./backend/$mod/... --config=.golangci.yml || ERR=1
+            {{.GOLANGCI_LINT}} run ./{{.BACKEND_DIR}}/$mod/... --config=.golangci.yml || ERR=1
           fi
         done
         exit $ERR
@@ -173,14 +174,14 @@ tasks:
   proto:gen:
     deps: [ install-buf, proto:install-plugins, proto:lint ]
     desc: Генерация Go-кода из .proto
-    dir: backend/shared/proto
+    dir: '{{.BACKEND_DIR}}/shared/proto'
     cmds:
       - '{{.BUF}} generate'
 
   proto:lint:
     deps: [ install-buf, proto:install-plugins ]
     desc: Проверка .proto-файлов на соответствие стилю
-    dir: backend/shared/proto
+    dir: '{{.BACKEND_DIR}}/shared/proto'
     cmds:
       - '{{.BUF}} lint'
 
@@ -246,9 +247,9 @@ tasks:
       - |
         echo "🔄 Обновление зависимостей в go.mod во всех модулях"
         for mod in {{.MODULES}}; do
-          if [ -d "backend/$mod" ]; then
+          if [ -d "{{.BACKEND_DIR}}/$mod" ]; then
             echo "🔄 Обновление зависимостей в $mod"
-            (cd "backend/$mod" && go mod tidy -compat=1.24) || exit 1
+            (cd "{{.BACKEND_DIR}}/$mod" && go mod tidy -compat=1.24) || exit 1
           fi
         done
 
@@ -293,7 +294,7 @@ tasks:
         for mod in {{.MODULES}}; do
           echo "📦 Обрабатываем модуль: $mod"
         
-          TARGET_PKGS=$(go list ./backend/$mod/... \
+          TARGET_PKGS=$(go list ./{{.BACKEND_DIR}}/$mod/... \
             | grep -E '/(internal/(service|repository))' \
             | grep -vE '/(mocks|testdata|pkg|api|proto|pb|cmd)' \
             | paste -sd "," -)
@@ -368,9 +369,9 @@ tasks:
         go clean -testcache
         ERR=0
         for mod in {{.MODULES}}; do
-          if [ -d "backend/$mod" ]; then
+          if [ -d "{{.BACKEND_DIR}}/$mod" ]; then
             echo "🧪 Тестируем модуль $mod (только юнит-тесты)"
-            go test -v -race $(go list ./backend/$mod/... | grep -v -E '(/integration|/tests/integration|/integrationtests)') || ERR=1
+            go test -v -race $(go list ./{{.BACKEND_DIR}}/$mod/... | grep -v -E '(/integration|/tests/integration|/integrationtests)') || ERR=1
           fi
         done
         exit $ERR
@@ -873,9 +874,9 @@ tasks:
         ERR=0
         echo "🚀 Запуск интеграционных тестов (по тегу integration) для модулей: {{.MODULES}}"
         for mod in {{.MODULES}}; do
-          if [ -d "backend/$mod" ]; then           
+          if [ -d "{{.BACKEND_DIR}}/$mod" ]; then           
             echo "▶️ Запуск интеграционных тестов для $mod"
-            go test -v -tags=integration ./backend/$mod/... || ERR=1
+            go test -v -tags=integration ./{{.BACKEND_DIR}}/$mod/... || ERR=1
           fi
         done
         exit $ERR

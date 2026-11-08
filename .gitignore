@@ -39,3 +39,7 @@ examples/
 # Скилл не нужен Go-проекту, лежит локально
 .agents/skills/nestjs-best-practices/
 .claude/skills/nestjs-best-practices
+
+# Python
+__pycache__/
+*.pyc

@@ -1,0 +1,4 @@
+# Сторонние скиллы агентов не относятся к коду проекта: не учитываем их в статистике языков GitHub
+# и сворачиваем в диффах.
+.agents/** linguist-vendored linguist-generated
+.claude/skills/** linguist-vendored

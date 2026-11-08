@@ -33,28 +33,29 @@ func TestWhoami_SessionSource(t *testing.T) {
 	sessionUUID := uuid.New()
 	otherUUID := uuid.New()
 
-	withMetadata := func(value string) context.Context {
-		return metadata.NewIncomingContext(context.Background(), metadata.Pairs(grpcMiddleware.SessionUUIDMetadataKey, value))
-	}
-
 	tests := []struct {
 		name     string
-		ctx      context.Context
+		metadata string // значение session-uuid в gRPC-metadata; пусто, если metadata нет
 		req      *iamV1.WhoamiRequest
 		wantUUID uuid.UUID
 		wantCode codes.Code
 	}{
-		{"из поля запроса", context.Background(), &iamV1.WhoamiRequest{SessionUuid: sessionUUID.String()}, sessionUUID, codes.OK},
-		{"из metadata, когда поле пустое", withMetadata(sessionUUID.String()), &iamV1.WhoamiRequest{}, sessionUUID, codes.OK},
-		{"поле запроса важнее metadata", withMetadata(otherUUID.String()), &iamV1.WhoamiRequest{SessionUuid: sessionUUID.String()}, sessionUUID, codes.OK},
-		{"нет ни поля, ни metadata", context.Background(), &iamV1.WhoamiRequest{}, uuid.Nil, codes.InvalidArgument},
-		{"невалидный uuid в metadata", withMetadata("not-a-uuid"), &iamV1.WhoamiRequest{}, uuid.Nil, codes.InvalidArgument},
+		{"из поля запроса", "", &iamV1.WhoamiRequest{SessionUuid: sessionUUID.String()}, sessionUUID, codes.OK},
+		{"из metadata, когда поле пустое", sessionUUID.String(), &iamV1.WhoamiRequest{}, sessionUUID, codes.OK},
+		{"поле запроса важнее metadata", otherUUID.String(), &iamV1.WhoamiRequest{SessionUuid: sessionUUID.String()}, sessionUUID, codes.OK},
+		{"нет ни поля, ни metadata", "", &iamV1.WhoamiRequest{}, uuid.Nil, codes.InvalidArgument},
+		{"невалидный uuid в metadata", "not-a-uuid", &iamV1.WhoamiRequest{}, uuid.Nil, codes.InvalidArgument},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			if tc.metadata != "" {
+				ctx = metadata.NewIncomingContext(ctx, metadata.Pairs(grpcMiddleware.SessionUUIDMetadataKey, tc.metadata))
+			}
+
 			stub := &whoamiStub{}
-			res, err := NewAPI(stub).Whoami(tc.ctx, tc.req)
+			res, err := NewAPI(stub).Whoami(ctx, tc.req)
 
 			require.Equal(t, tc.wantCode, status.Code(err))
 			if tc.wantCode == codes.OK {

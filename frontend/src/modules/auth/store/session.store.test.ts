@@ -1,5 +1,6 @@
 import { act, renderHook } from '@testing-library/react'
 
+import { queryClient } from '@/common/api/query-client'
 import { STORAGE_KEYS } from '@/common/lib/storage'
 
 import { getSession, parseSession, signIn, signOut, useSession, useSessionStore } from './session.store'
@@ -19,6 +20,15 @@ describe('session store', () => {
 
     expect(getSession()).toBeNull()
     expect(JSON.parse(localStorage.getItem(STORAGE_KEYS.session) ?? '').state.session).toBeNull()
+  })
+
+  it('выход очищает кэш запросов: данные пользователя не остаются в памяти', () => {
+    signIn(session)
+    queryClient.setQueryData(['orders', session.sessionUuid], [{ uuid: 'o1' }])
+
+    signOut()
+
+    expect(queryClient.getQueryData(['orders', session.sessionUuid])).toBeUndefined()
   })
 
   it('компонент перерисовывается при входе и выходе', () => {

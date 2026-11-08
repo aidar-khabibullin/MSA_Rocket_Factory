@@ -16,7 +16,35 @@ service InventoryService {
   // ListParts получает список деталей
   rpc ListParts(ListPartsRequest) returns (ListPartsResponse);
 
+  // ReserveParts резервирует детали под заказ: уменьшает остаток каждой детали на её количество в заказе.
+  // Операция идемпотентна по order_uuid и атомарна: если хотя бы одной детали не хватает, не резервируется ничего.
+  rpc ReserveParts(ReservePartsRequest) returns (ReservePartsResponse);
+
+  // ReleaseParts снимает резерв заказа и возвращает остатки. Идемпотентна: для заказа без резерва ничего не делает.
+  rpc ReleaseParts(ReleasePartsRequest) returns (ReleasePartsResponse);
+
 }
+
+// ReservePartsRequest запрашивает резерв деталей под заказ
+message ReservePartsRequest {
+  // order_uuid уникальный идентификатор заказа (ключ идемпотентности)
+  string order_uuid = 1;
+
+  // part_uuids детали заказа; повторяющийся uuid означает несколько штук
+  repeated string part_uuids = 2;
+}
+
+// ReservePartsResponse подтверждает резерв
+message ReservePartsResponse {}
+
+// ReleasePartsRequest запрашивает снятие резерва заказа
+message ReleasePartsRequest {
+  // order_uuid уникальный идентификатор заказа
+  string order_uuid = 1;
+}
+
+// ReleasePartsResponse подтверждает снятие резерва
+message ReleasePartsResponse {}
 
 // GetPartRequest запрашивает информацию о детали по UUID
 message GetPartRequest {

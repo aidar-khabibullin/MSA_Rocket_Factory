@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"testing"
 )
 
@@ -207,6 +208,36 @@ func TestUserRegistrationInfo_Validate(t *testing.T) {
 			err := tt.info.Validate()
 			if (err != nil) != tt.wantErr {
 				t.Errorf("UserRegistrationInfo.Validate() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+// Ошибки валидации должны сопоставляться с sentinel-ошибками, иначе API-слой
+// не отличит их от внутренних сбоев и вернёт Internal вместо InvalidArgument.
+func TestValidation_WrapsSentinelErrors(t *testing.T) {
+	tests := []struct {
+		name string
+		err  error
+		want error
+	}{
+		{"слабый пароль", ValidatePassword("short"), ErrWeakPassword},
+		{"пароль без спецсимвола", ValidatePassword("Abcdefg1"), ErrWeakPassword},
+		{"пустой email", ValidateEmail(""), ErrEmptyEmail},
+		{"некорректный email", ValidateEmail("not-an-email"), ErrInvalidEmail},
+		{"короткий логин", ValidateLogin("ab"), ErrInvalidLogin},
+		{"логин с запрещёнными символами", ValidateLogin("bad login!"), ErrInvalidLogin},
+		{
+			"через Validate регистрации",
+			(&UserRegistrationInfo{Login: "valid_login", Email: "a@b.io", Password: "weak"}).Validate(),
+			ErrWeakPassword,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if !errors.Is(tt.err, tt.want) {
+				t.Fatalf("errors.Is(%v, %v) = false", tt.err, tt.want)
 			}
 		})
 	}

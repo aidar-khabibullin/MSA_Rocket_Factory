@@ -18,6 +18,7 @@ type config struct {
 	Telegram              TelegramConfig
 	GRPCClient            GRPCClientConfig
 	Tracing               TracingConfig
+	Dedup                 DedupConfig
 }
 
 func Load(path ...string) error {
@@ -61,6 +62,11 @@ func Load(path ...string) error {
 		return err
 	}
 
+	dedupCfg, err := env.NewDedupConfig()
+	if err != nil {
+		return err
+	}
+
 	appConfig = &config{
 		Logger:                loggerCfg,
 		Kafka:                 kafkaCfg,
@@ -69,6 +75,7 @@ func Load(path ...string) error {
 		Telegram:              telegramCfg,
 		GRPCClient:            grpcClientCfg,
 		Tracing:               tracingCfg,
+		Dedup:                 dedupCfg,
 	}
 
 	return nil

@@ -75,3 +75,11 @@ func TestAPI_ListParts_WithoutAuth(t *testing.T) {
 	assert.NotNil(t, resp)
 	mockService.AssertExpectations(t)
 }
+
+func (m *MockInventoryService) ReserveParts(ctx context.Context, orderUUID uuid.UUID, partUUIDs []uuid.UUID) error {
+	return m.Called(ctx, orderUUID, partUUIDs).Error(0)
+}
+
+func (m *MockInventoryService) ReleaseParts(ctx context.Context, orderUUID uuid.UUID) error {
+	return m.Called(ctx, orderUUID).Error(0)
+}

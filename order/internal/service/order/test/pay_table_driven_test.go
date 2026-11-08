@@ -257,6 +257,8 @@ func (s *ServiceSuite) TestPayOrder_TableDriven() {
 					Return(paidOrder, nil)
 				s.orderRepository.On("UpdateOrderIfStatus", mock.Anything, paidOrder, model.StatusPendingPayment).
 					Return(nil, model.ErrOrderNotFound)
+				// Деньги списаны, а заказ не обновлён: платёж должен быть возвращён
+				s.paymentClient.On("RefundPayment", mock.Anything, paidOrder).Return(nil).Once()
 
 				return dbOrder, paidOrder
 			},

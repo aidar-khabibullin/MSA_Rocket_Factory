@@ -114,6 +114,14 @@ Application → OpenTelemetry Meter → OTLP Exporter → OTLP Collector → Pro
 | `kafka_consumer_messages_failed_total` | Counter | Количество неудачных обработок | 1 | topic, group_id |
 | `kafka_consumer_offset_lag` | Gauge | Отставание consumer от producer | 1 | topic, group_id, partition |
 | `kafka_consumer_rebalancing_total` | Counter | Количество ребалансировок | 1 | group_id |
+| `kafka_consumer_retries_total` | Counter | Повторные попытки обработки сообщения | 1 | topic, group_id |
+| `kafka_consumer_dead_letters_total` | Counter | Сообщения, отправленные в `<топик>.dlq` после исчерпания повторов | 1 | topic, group_id |
+| `kafka_dedup_duplicates_total` | Counter | Повторные доставки, отброшенные по `event_uuid` | 1 | topic, group_id |
+| `kafka_dedup_store_errors_total` | Counter | Ошибки хранилища дедупликации (обработка продолжалась без проверки) | 1 | scope |
+
+Что смотреть оператору:
+- Рост `kafka_consumer_dead_letters_total` значит, что сообщения не обрабатываются даже после повторов: их нужно разобрать вручную в топике `<топик>.dlq` (заголовки `x-original-topic`, `x-original-partition`, `x-original-offset`, `x-error`).
+- Рост `kafka_dedup_store_errors_total` значит, что Redis дедупликации недоступен и защита от дубликатов временно не работает.
 
 ### Метки метрик:
 

@@ -73,7 +73,7 @@ func TestProduceOrderPaid_Success(t *testing.T) {
 	}
 
 	// Ожидаем что Send будет вызван с правильными параметрами
-	mockProducer.On("Send", mock.Anything, []byte(eventUUID.String()), mock.MatchedBy(func(value []byte) bool {
+	mockProducer.On("Send", mock.Anything, []byte(orderUUID.String()), mock.MatchedBy(func(value []byte) bool {
 		// Проверяем что payload можно десериализовать обратно
 		msg := &eventsV1.OrderPaid{}
 		err := proto.Unmarshal(value, msg)
@@ -215,16 +215,17 @@ func TestProduceOrderPaid_EventUUIDAsKey(t *testing.T) {
 	svc := NewService(mockProducer, mockMetrics)
 
 	eventUUID := uuid.New()
+	orderUUID := uuid.New()
 	event := model.OrderPaidEvent{
 		EventUUID:       eventUUID,
-		OrderUUID:       uuid.New(),
+		OrderUUID:       orderUUID,
 		UserUUID:        uuid.New(),
 		PaymentMethod:   "CARD",
 		TransactionUUID: uuid.New(),
 	}
 
-	// Проверяем что ключ сообщения == EventUUID
-	mockProducer.On("Send", mock.Anything, []byte(eventUUID.String()), mock.Anything).Return(nil)
+	// Ключ сообщения == OrderUUID: события одного заказа попадают в одну партицию и читаются по порядку
+	mockProducer.On("Send", mock.Anything, []byte(orderUUID.String()), mock.Anything).Return(nil)
 	mockMetrics.On("RecordProducerMessage", mock.Anything, "order-paid", int32(0), true, mock.AnythingOfType("time.Duration")).Return()
 
 	// Act

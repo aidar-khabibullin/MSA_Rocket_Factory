@@ -117,6 +117,7 @@ var (
 	ErrEmptyPassword = NewAppError(ErrCodeEmptyPassword, "пароль не может быть пустым")
 	ErrEmptyEmail    = NewAppError(ErrCodeEmptyEmail, "email не может быть пустым")
 	ErrInvalidEmail  = NewAppError(ErrCodeInvalidEmail, "некорректный формат email")
+	ErrInvalidLogin  = NewAppError(ErrCodeValidationFailed, "некорректный логин")
 	ErrWeakPassword  = NewAppError(ErrCodeWeakPassword, "пароль слишком слабый")
 
 	// Ошибки хэширования

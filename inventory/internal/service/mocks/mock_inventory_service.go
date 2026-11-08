@@ -145,6 +145,28 @@ func (_c *InventoryService_ListParts_Call) RunAndReturn(run func(context.Context
 	return _c
 }
 
+// ReserveParts provides a mock function with given fields: ctx, orderUUID, partUUIDs
+func (_m *InventoryService) ReserveParts(ctx context.Context, orderUUID uuid.UUID, partUUIDs []uuid.UUID) error {
+	ret := _m.Called(ctx, orderUUID, partUUIDs)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ReserveParts")
+	}
+
+	return ret.Error(0)
+}
+
+// ReleaseParts provides a mock function with given fields: ctx, orderUUID
+func (_m *InventoryService) ReleaseParts(ctx context.Context, orderUUID uuid.UUID) error {
+	ret := _m.Called(ctx, orderUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ReleaseParts")
+	}
+
+	return ret.Error(0)
+}
+
 // NewInventoryService creates a new instance of InventoryService. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
 // The first argument is typically a *testing.T value.
 func NewInventoryService(t interface {

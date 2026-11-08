@@ -283,15 +283,17 @@ func (a *App) initHTTPServer(ctx context.Context) error {
 	r.Use(customMiddleware.RequestLogger)
 	r.Use(customMiddleware.MetricsMiddleware(httpMetrics))
 
-	// Добавляем middleware аутентификации для всех API роутов
-	authMiddleware := a.diContainer.AuthMiddleware(ctx)
-	r.Use(authMiddleware.Handle)
-
-	// Health check endpoint без аутентификации
+	// Health check без аутентификации: его вызывают пробы живости и шлюз, у них нет сессии пользователя.
 	healthHandler := health.NewHealthHandler()
 	r.Get("/health", healthHandler.Handle)
 
-	r.Mount("/", orderServer)
+	// Аутентификация действует только на API заказов. В chi нельзя вызывать Use после регистрации
+	// маршрутов на том же роутере, поэтому защищённая часть вынесена в группу.
+	authMiddleware := a.diContainer.AuthMiddleware(ctx)
+	r.Group(func(protected chi.Router) {
+		protected.Use(authMiddleware.Handle)
+		protected.Mount("/", orderServer)
+	})
 
 	// Создаем HTTP сервер
 	a.httpServer = &http.Server{

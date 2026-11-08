@@ -26,8 +26,19 @@ func (s *service) Pay(ctx context.Context, order model.Order) (uuid.UUID, error)
 		attribute.String("payment.method", order.PaymentMethod),
 	)
 
-	span.AddEvent("generating transaction UUID")
-	transactionUuid := uuid.New()
+	// Платёж по заказу идемпотентен: повторный вызов (повтор запроса клиента, гонка двух запросов)
+	// возвращает уже созданную транзакцию и не списывает деньги второй раз.
+	transactionUuid, created := s.transactionFor(order.OrderUuid)
+	if !created {
+		span.AddEvent("idempotent replay: existing transaction returned")
+		logger.Info(ctx, "Payment replay: existing transaction returned",
+			zap.String("order_uuid", order.OrderUuid.String()),
+			zap.String("transaction_uuid", transactionUuid.String()),
+		)
+		span.SetStatus(codes.Ok, "payment replayed")
+		return transactionUuid, nil
+	}
+	span.AddEvent("transaction created")
 
 	// Добавляем UUID транзакции к спану
 	span.SetAttributes(attribute.String("payment.transaction_uuid", transactionUuid.String()))
@@ -42,4 +53,19 @@ func (s *service) Pay(ctx context.Context, order model.Order) (uuid.UUID, error)
 
 	span.SetStatus(codes.Ok, "payment processed successfully")
 	return transactionUuid, nil
+}
+
+// transactionFor возвращает транзакцию по заказу. created=false, если платёж уже существует и не возвращён.
+func (s *service) transactionFor(orderUUID uuid.UUID) (transaction uuid.UUID, created bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if rec, ok := s.records[orderUUID]; ok && rec.refundUUID == uuid.Nil {
+		return rec.transactionUUID, false
+	}
+
+	// Платежа нет или он возвращён: создаём новую транзакцию (повторная оплата после возврата).
+	transaction = uuid.New()
+	s.records[orderUUID] = &record{transactionUUID: transaction}
+	return transaction, true
 }

@@ -25,6 +25,12 @@ type KafkaMetrics struct {
 	// Consumer Group метрики
 	consumerGroupMembers     metric.Int64Gauge
 	consumerRebalancingTotal metric.Int64Counter
+
+	// Надёжность доставки: повторы, dead letter queue, дедупликация
+	consumerRetriesTotal     metric.Int64Counter
+	consumerDeadLettersTotal metric.Int64Counter
+	dedupDuplicatesTotal     metric.Int64Counter
+	dedupStoreErrorsTotal    metric.Int64Counter
 }
 
 // NewKafkaMetrics создает новый экземпляр метрик для Kafka
@@ -116,7 +122,35 @@ func NewKafkaMetrics() (*KafkaMetrics, error) {
 		return nil, err
 	}
 
+	counter := func(name, description string) (metric.Int64Counter, error) {
+		return meter.Int64Counter(name, metric.WithDescription(description), metric.WithUnit("1"))
+	}
+
+	consumerRetriesTotal, err := counter("kafka_consumer_retries_total", "Количество повторных попыток обработки сообщения")
+	if err != nil {
+		return nil, err
+	}
+
+	consumerDeadLettersTotal, err := counter("kafka_consumer_dead_letters_total", "Количество сообщений, отправленных в DLQ после исчерпания повторов")
+	if err != nil {
+		return nil, err
+	}
+
+	dedupDuplicatesTotal, err := counter("kafka_dedup_duplicates_total", "Количество повторных доставок, отброшенных по event_uuid")
+	if err != nil {
+		return nil, err
+	}
+
+	dedupStoreErrorsTotal, err := counter("kafka_dedup_store_errors_total", "Количество ошибок хранилища дедупликации (обработка продолжалась без проверки)")
+	if err != nil {
+		return nil, err
+	}
+
 	return &KafkaMetrics{
+		consumerRetriesTotal:     consumerRetriesTotal,
+		consumerDeadLettersTotal: consumerDeadLettersTotal,
+		dedupDuplicatesTotal:     dedupDuplicatesTotal,
+		dedupStoreErrorsTotal:    dedupStoreErrorsTotal,
 		producerMessagesTotal:    producerMessagesTotal,
 		producerMessagesFailed:   producerMessagesFailed,
 		producerMessageDuration:  producerMessageDuration,
@@ -192,6 +226,26 @@ func (m *KafkaMetrics) RecordConsumerRebalancing(ctx context.Context, groupID st
 	}
 
 	m.consumerRebalancingTotal.Add(ctx, 1, metric.WithAttributes(attrs...))
+}
+
+// RecordConsumerRetry записывает повторную попытку обработки сообщения
+func (m *KafkaMetrics) RecordConsumerRetry(ctx context.Context, topic, groupID string) {
+	m.consumerRetriesTotal.Add(ctx, 1, metric.WithAttributes(attribute.String("topic", topic), attribute.String("group_id", groupID)))
+}
+
+// RecordConsumerDeadLetter записывает отправку сообщения в DLQ
+func (m *KafkaMetrics) RecordConsumerDeadLetter(ctx context.Context, topic, groupID string) {
+	m.consumerDeadLettersTotal.Add(ctx, 1, metric.WithAttributes(attribute.String("topic", topic), attribute.String("group_id", groupID)))
+}
+
+// RecordDedupDuplicate записывает отброшенную повторную доставку
+func (m *KafkaMetrics) RecordDedupDuplicate(ctx context.Context, topic, groupID string) {
+	m.dedupDuplicatesTotal.Add(ctx, 1, metric.WithAttributes(attribute.String("topic", topic), attribute.String("group_id", groupID)))
+}
+
+// RecordDedupStoreError записывает недоступность хранилища дедупликации
+func (m *KafkaMetrics) RecordDedupStoreError(ctx context.Context, scope string) {
+	m.dedupStoreErrorsTotal.Add(ctx, 1, metric.WithAttributes(attribute.String("scope", scope)))
 }
 
 // getProducerStatus возвращает статус producer операции

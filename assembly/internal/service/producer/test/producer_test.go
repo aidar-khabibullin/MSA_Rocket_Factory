@@ -21,8 +21,8 @@ func (s *ProducerServiceSuite) TestProduceAssembly_Success() {
 
 	// Настраиваем мок для успешной отправки
 	s.assemblyProducer.SendFunc = func(ctx context.Context, key, value []byte) error {
-		// Проверяем, что ключ соответствует EventUUID
-		assert.Equal(s.T(), event.EventUUID.String(), string(key))
+		// Ключ == OrderUUID: события одного заказа попадают в одну партицию и читаются по порядку
+		assert.Equal(s.T(), event.OrderUUID.String(), string(key))
 		// Проверяем, что value не пустой (protobuf сообщение)
 		assert.NotEmpty(s.T(), value)
 		return nil

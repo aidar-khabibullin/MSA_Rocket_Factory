@@ -117,9 +117,9 @@ func TestUpdateOrderStatus_Success(t *testing.T) {
 	}
 
 	mockRepo.On("GetOrder", mock.Anything, orderUUID).Return(existingOrder, nil)
-	mockRepo.On("UpdateOrder", mock.Anything, mock.MatchedBy(func(order *model.Order) bool {
+	mockRepo.On("UpdateOrderIfStatus", mock.Anything, mock.MatchedBy(func(order *model.Order) bool {
 		return order.Status == model.StatusPaid
-	})).Return(updatedOrder, nil)
+	}), model.StatusPendingPayment).Return(updatedOrder, nil)
 
 	// Act
 	err := svc.UpdateOrderStatus(context.Background(), orderUUID.String(), model.StatusPaid)
@@ -182,7 +182,7 @@ func TestUpdateOrderStatus_RepositoryUpdateError(t *testing.T) {
 	expectedError := errors.New("database error")
 
 	mockRepo.On("GetOrder", mock.Anything, orderUUID).Return(existingOrder, nil)
-	mockRepo.On("UpdateOrder", mock.Anything, mock.Anything).Return(nil, expectedError)
+	mockRepo.On("UpdateOrderIfStatus", mock.Anything, mock.Anything, model.StatusPendingPayment).Return(nil, expectedError)
 
 	// Act
 	err := svc.UpdateOrderStatus(context.Background(), orderUUID.String(), model.StatusPaid)
@@ -214,11 +214,6 @@ func TestUpdateOrderStatus_DifferentStatuses(t *testing.T) {
 			initialStatus: model.StatusPaid,
 			newStatus:     model.StatusAssembled,
 		},
-		{
-			name:          "paid to cancelled",
-			initialStatus: model.StatusPaid,
-			newStatus:     model.StatusCancelled,
-		},
 	}
 
 	for _, tt := range tests {
@@ -249,9 +244,9 @@ func TestUpdateOrderStatus_DifferentStatuses(t *testing.T) {
 			}
 
 			mockRepo.On("GetOrder", mock.Anything, orderUUID).Return(existingOrder, nil)
-			mockRepo.On("UpdateOrder", mock.Anything, mock.MatchedBy(func(order *model.Order) bool {
+			mockRepo.On("UpdateOrderIfStatus", mock.Anything, mock.MatchedBy(func(order *model.Order) bool {
 				return order.Status == tt.newStatus
-			})).Return(updatedOrder, nil)
+			}), tt.initialStatus).Return(updatedOrder, nil)
 
 			// Act
 			err := svc.UpdateOrderStatus(context.Background(), orderUUID.String(), tt.newStatus)
@@ -261,6 +256,53 @@ func TestUpdateOrderStatus_DifferentStatuses(t *testing.T) {
 			mockRepo.AssertExpectations(t)
 		})
 	}
+}
+
+// Недопустимый переход не должен менять заказ: репозиторий вообще не вызывается.
+func TestUpdateOrderStatus_InvalidTransition(t *testing.T) {
+	tests := []struct {
+		name string
+		from model.OrderStatus
+		to   model.OrderStatus
+	}{
+		{"assembled to paid", model.StatusAssembled, model.StatusPaid},
+		{"assembled to pending", model.StatusAssembled, model.StatusPendingPayment},
+		{"paid to cancelled", model.StatusPaid, model.StatusCancelled},
+		{"paid to pending", model.StatusPaid, model.StatusPendingPayment},
+		{"cancelled to paid", model.StatusCancelled, model.StatusPaid},
+		{"cancelled to assembled", model.StatusCancelled, model.StatusAssembled},
+		{"pending to assembled", model.StatusPendingPayment, model.StatusAssembled},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockRepo := &MockOrderRepository{}
+			svc := NewService(mockRepo, nil, nil, nil)
+
+			orderUUID := uuid.New()
+			mockRepo.On("GetOrder", mock.Anything, orderUUID).Return(&model.Order{OrderUUID: orderUUID, Status: tt.from}, nil)
+
+			err := svc.UpdateOrderStatus(context.Background(), orderUUID.String(), tt.to)
+
+			assert.ErrorIs(t, err, model.ErrInvalidStatusChange)
+			mockRepo.AssertNotCalled(t, "UpdateOrderIfStatus", mock.Anything, mock.Anything, mock.Anything)
+			mockRepo.AssertNotCalled(t, "UpdateOrder", mock.Anything, mock.Anything)
+		})
+	}
+}
+
+// Повторная доставка того же статуса (например, второй ship.assembled) безвредна и не пишет в БД.
+func TestUpdateOrderStatus_SameStatusIsNoop(t *testing.T) {
+	mockRepo := &MockOrderRepository{}
+	svc := NewService(mockRepo, nil, nil, nil)
+
+	orderUUID := uuid.New()
+	mockRepo.On("GetOrder", mock.Anything, orderUUID).Return(&model.Order{OrderUUID: orderUUID, Status: model.StatusAssembled}, nil)
+
+	err := svc.UpdateOrderStatus(context.Background(), orderUUID.String(), model.StatusAssembled)
+
+	assert.NoError(t, err)
+	mockRepo.AssertNotCalled(t, "UpdateOrderIfStatus", mock.Anything, mock.Anything, mock.Anything)
 }
 
 func TestSetOrderPaidProducer_Success(t *testing.T) {
@@ -333,7 +375,7 @@ func TestUpdateOrderStatus_WithContext(t *testing.T) {
 	ctx := context.Background()
 
 	mockRepo.On("GetOrder", ctx, orderUUID).Return(existingOrder, nil)
-	mockRepo.On("UpdateOrder", ctx, mock.Anything).Return(updatedOrder, nil)
+	mockRepo.On("UpdateOrderIfStatus", ctx, mock.Anything, model.StatusPendingPayment).Return(updatedOrder, nil)
 
 	// Act
 	err := svc.UpdateOrderStatus(ctx, orderUUID.String(), model.StatusPaid)
@@ -416,9 +458,9 @@ func TestUpdateOrderStatus_TableDriven(t *testing.T) {
 					}
 
 					if tt.updateError != nil {
-						mockRepo.On("UpdateOrder", mock.Anything, mock.Anything).Return(nil, tt.updateError)
+						mockRepo.On("UpdateOrderIfStatus", mock.Anything, mock.Anything, model.StatusPendingPayment).Return(nil, tt.updateError)
 					} else {
-						mockRepo.On("UpdateOrder", mock.Anything, mock.Anything).Return(updatedOrder, nil)
+						mockRepo.On("UpdateOrderIfStatus", mock.Anything, mock.Anything, model.StatusPendingPayment).Return(updatedOrder, nil)
 					}
 				}
 			}

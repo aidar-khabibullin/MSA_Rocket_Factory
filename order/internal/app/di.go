@@ -387,6 +387,9 @@ func (d *diContainer) ShipAssembledKafkaConsumer(ctx context.Context) wrappedKaf
 
 		// Создаем lag tracker и metrics middleware
 		var middlewares []consumer.Middleware
+		if dedup := d.dedupMiddleware(ctx, kafkaMetrics); dedup != nil {
+			middlewares = append(middlewares, dedup)
+		}
 		if kafkaMetrics != nil {
 			// Добавляем lag tracking middleware
 			lagTracker := kafkaMiddleware.NewLagTracker(
@@ -423,7 +426,7 @@ func (d *diContainer) ShipAssembledKafkaConsumer(ctx context.Context) wrappedKaf
 			logger.Logger(),
 			middlewares,
 			consumerGroupMiddlewares,
-		)
+		).WithResilience(kafkaMiddleware.ConsumerResilience(kafkaMetrics, config.AppConfig().ShipAssembledConsumer.GroupID(), consumer.NewDLQPublisher(d.SyncProducer())))
 	}
 
 	return d.shipAssembledKafkaConsumer

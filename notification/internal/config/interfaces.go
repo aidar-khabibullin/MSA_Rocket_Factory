@@ -1,6 +1,10 @@
 package config
 
-import "github.com/IBM/sarama"
+import (
+	"time"
+
+	"github.com/IBM/sarama"
+)
 
 type LoggerConfig interface {
 	Level() string
@@ -40,4 +44,11 @@ type TracingConfig interface {
 	ServiceName() string
 	Environment() string
 	ServiceVersion() string
+}
+
+// DedupConfig — настройки дедупликации Kafka-событий.
+type DedupConfig interface {
+	// Addr — адрес Redis; пусто — дедупликация отключена.
+	Addr() string
+	TTL() time.Duration
 }

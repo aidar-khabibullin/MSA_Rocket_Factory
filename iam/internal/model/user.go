@@ -68,14 +68,29 @@ var (
 	loginRegex = regexp.MustCompile(`^[a-zA-Z0-9_]+$`)
 )
 
+// validationError — ошибка валидации с подробным сообщением для пользователя.
+// errors.Is сопоставляет её с sentinel-ошибкой (например, ErrWeakPassword),
+// чтобы API-слой мог вернуть InvalidArgument вместо Internal.
+type validationError struct {
+	kind error
+	msg  string
+}
+
+func (e *validationError) Error() string { return e.msg }
+func (e *validationError) Unwrap() error { return e.kind }
+
+func invalid(kind error, format string, args ...any) error {
+	return &validationError{kind: kind, msg: fmt.Sprintf(format, args...)}
+}
+
 // ValidatePassword проверяет соответствие пароля требованиям безопасности
 func ValidatePassword(password string) error {
 	if len(password) < MinPasswordLength {
-		return fmt.Errorf("пароль должен содержать минимум %d символов", MinPasswordLength)
+		return invalid(ErrWeakPassword, "пароль должен содержать минимум %d символов", MinPasswordLength)
 	}
 
 	if len(password) > MaxPasswordLength {
-		return fmt.Errorf("пароль не должен превышать %d символов", MaxPasswordLength)
+		return invalid(ErrWeakPassword, "пароль не должен превышать %d символов", MaxPasswordLength)
 	}
 
 	var (
@@ -99,16 +114,16 @@ func ValidatePassword(password string) error {
 	}
 
 	if !hasUpper {
-		return fmt.Errorf("пароль должен содержать минимум одну заглавную букву")
+		return invalid(ErrWeakPassword, "пароль должен содержать минимум одну заглавную букву")
 	}
 	if !hasLower {
-		return fmt.Errorf("пароль должен содержать минимум одну строчную букву")
+		return invalid(ErrWeakPassword, "пароль должен содержать минимум одну строчную букву")
 	}
 	if !hasNumber {
-		return fmt.Errorf("пароль должен содержать минимум одну цифру")
+		return invalid(ErrWeakPassword, "пароль должен содержать минимум одну цифру")
 	}
 	if !hasSpecial {
-		return fmt.Errorf("пароль должен содержать минимум один специальный символ")
+		return invalid(ErrWeakPassword, "пароль должен содержать минимум один специальный символ")
 	}
 
 	return nil
@@ -117,13 +132,13 @@ func ValidatePassword(password string) error {
 // ValidateEmail проверяет корректность email адреса
 func ValidateEmail(email string) error {
 	if len(email) == 0 {
-		return fmt.Errorf("email не может быть пустым")
+		return invalid(ErrEmptyEmail, "email не может быть пустым")
 	}
 	if len(email) > MaxEmailLength {
-		return fmt.Errorf("email не должен превышать %d символов", MaxEmailLength)
+		return invalid(ErrInvalidEmail, "email не должен превышать %d символов", MaxEmailLength)
 	}
 	if !emailRegex.MatchString(email) {
-		return fmt.Errorf("некорректный формат email")
+		return invalid(ErrInvalidEmail, "некорректный формат email")
 	}
 	return nil
 }
@@ -131,13 +146,13 @@ func ValidateEmail(email string) error {
 // ValidateLogin проверяет корректность логина
 func ValidateLogin(login string) error {
 	if len(login) < MinLoginLength {
-		return fmt.Errorf("логин должен содержать минимум %d символов", MinLoginLength)
+		return invalid(ErrInvalidLogin, "логин должен содержать минимум %d символов", MinLoginLength)
 	}
 	if len(login) > MaxLoginLength {
-		return fmt.Errorf("логин не должен превышать %d символов", MaxLoginLength)
+		return invalid(ErrInvalidLogin, "логин не должен превышать %d символов", MaxLoginLength)
 	}
 	if !loginRegex.MatchString(login) {
-		return fmt.Errorf("логин может содержать только буквы, цифры и символ подчеркивания")
+		return invalid(ErrInvalidLogin, "логин может содержать только буквы, цифры и символ подчеркивания")
 	}
 	return nil
 }

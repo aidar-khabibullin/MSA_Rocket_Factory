@@ -193,6 +193,8 @@ func (s *ServiceSuite) TestPayOrder_UpdateError() {
 		Return(paidOrder, nil)
 	s.orderRepository.On("UpdateOrderIfStatus", mock.Anything, paidOrder, model.StatusPendingPayment).
 		Return(nil, model.ErrOrderNotFound)
+	// Деньги списаны, а заказ не обновлён: платёж должен быть возвращён
+	s.paymentClient.On("RefundPayment", mock.Anything, paidOrder).Return(nil).Once()
 
 	// Вызов метода
 	result, err := s.service.PayOrder(context.Background(), incomingOrder)
@@ -412,4 +414,42 @@ func (s *ServiceSuite) TestPayOrder_StatusChangedConcurrently() {
 	s.Require().Nil(result)
 	s.Require().ErrorIs(err, model.ErrOrderNotPayable)
 	s.Require().Nil(s.orderPaidProducer.GetLastEvent(), "событие не должно публиковаться при конфликте")
+}
+
+func (s *ServiceSuite) payScenario() (orderUUID uuid.UUID, paidOrder *model.Order) {
+	orderUUID = uuid.New()
+	dbOrder := &model.Order{OrderUUID: orderUUID, UserUUID: uuid.New(), TotalPrice: 100, Status: model.StatusPendingPayment}
+	paidOrder = &model.Order{
+		OrderUUID: orderUUID, UserUUID: dbOrder.UserUUID, TotalPrice: 100,
+		TransactionUUID: uuid.New(), PaymentMethod: "CARD", Status: model.StatusPaid,
+	}
+	s.orderRepository.On("GetOrder", mock.Anything, orderUUID).Return(dbOrder, nil)
+	s.paymentClient.On("CreatePayment", mock.Anything, mock.AnythingOfType("*model.Order")).Return(paidOrder, nil)
+	return orderUUID, paidOrder
+}
+
+// Ошибка возврата не должна подменять исходную ошибку клиенту: возврат только логируется.
+func (s *ServiceSuite) TestPayOrder_RefundFailureDoesNotMaskOriginalError() {
+	orderUUID, paidOrder := s.payScenario()
+	s.orderRepository.On("UpdateOrderIfStatus", mock.Anything, paidOrder, model.StatusPendingPayment).
+		Return(nil, model.ErrFailedToUpdateOrder)
+	s.paymentClient.On("RefundPayment", mock.Anything, paidOrder).Return(model.ErrPaymentClient).Once()
+
+	_, err := s.service.PayOrder(context.Background(), &model.Order{OrderUUID: orderUUID, PaymentMethod: "CARD"})
+
+	s.Require().ErrorIs(err, model.ErrFailedToUpdateOrder)
+	s.Require().NotErrorIs(err, model.ErrPaymentClient)
+}
+
+// При конфликте статуса деньги принадлежат победившему запросу: возврат не вызывается
+// (мок создан через NewPaymentClient, незапланированный вызов RefundPayment провалил бы тест).
+func (s *ServiceSuite) TestPayOrder_ConflictDoesNotRefund() {
+	orderUUID, paidOrder := s.payScenario()
+	s.orderRepository.On("UpdateOrderIfStatus", mock.Anything, paidOrder, model.StatusPendingPayment).
+		Return(nil, model.ErrOrderStatusChanged)
+
+	_, err := s.service.PayOrder(context.Background(), &model.Order{OrderUUID: orderUUID, PaymentMethod: "CARD"})
+
+	s.Require().ErrorIs(err, model.ErrOrderNotPayable)
+	s.paymentClient.AssertNotCalled(s.T(), "RefundPayment", mock.Anything, mock.Anything)
 }

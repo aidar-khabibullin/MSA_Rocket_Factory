@@ -69,7 +69,7 @@ func (r *repository) AddTestData(ctx context.Context) error {
 			Description:   "Навигационная система для космических аппаратов",
 			Price:         750000.00,
 			StockQuantity: 12,
-			Category:      2, // ELECTRONICS
+			Category:      0, // UNSPECIFIED: в proto нет категории для электроники
 			Dimensions: repoModel.Dimensions{
 				Length: 50.0,
 				Width:  40.0,
@@ -105,7 +105,7 @@ func (r *repository) AddTestData(ctx context.Context) error {
 			Description:   "Алюминиевый топливный бак для среднего класса ракет",
 			Price:         2500000.75,
 			StockQuantity: 8,
-			Category:      3, // STRUCTURE
+			Category:      2, // FUEL
 			Dimensions: repoModel.Dimensions{
 				Length: 1200.0,
 				Width:  366.0,
@@ -129,6 +129,66 @@ func (r *repository) AddTestData(ctx context.Context) error {
 					Float64Value: 3.5,
 				},
 				"insulated": {
+					BoolValue: true,
+				},
+			},
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
+		{
+			OrderUuid:     "d973e963-b7e6-4323-8f4e-4bfd5ab8e837",
+			Name:          "Иллюминатор Skyview-7",
+			Description:   "Многослойный иллюминатор с термозащитным покрытием",
+			Price:         420000.00,
+			StockQuantity: 20,
+			Category:      3, // PORTHOLE
+			Dimensions: repoModel.Dimensions{
+				Length: 60.0,
+				Width:  60.0,
+				Height: 12.0,
+				Weight: 38.5,
+			},
+			Manufacturer: repoModel.Manufacturer{
+				Name:    "Roscosmos Optics",
+				Country: "Russia",
+				Website: "https://www.roscosmos.ru",
+			},
+			Tags: []string{"porthole", "window", "heat-shield"},
+			Metadata: map[string]repoModel.Value{
+				"layers": {
+					Int64Value: 3,
+				},
+				"material": {
+					StringValue: "fused silica",
+				},
+			},
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+		},
+		{
+			OrderUuid:     "d973e963-b7e6-4323-8f4e-4bfd5ab8e838",
+			Name:          "Крыло Delta-X",
+			Description:   "Дельтавидное крыло для возвращаемой ступени",
+			Price:         3100000.00,
+			StockQuantity: 4,
+			Category:      4, // WING
+			Dimensions: repoModel.Dimensions{
+				Length: 820.0,
+				Width:  540.0,
+				Height: 45.0,
+				Weight: 2100.0,
+			},
+			Manufacturer: repoModel.Manufacturer{
+				Name:    "Airbus Defence and Space",
+				Country: "France",
+				Website: "https://www.airbus.com/space",
+			},
+			Tags: []string{"wing", "delta", "reusable"},
+			Metadata: map[string]repoModel.Value{
+				"material": {
+					StringValue: "carbon composite",
+				},
+				"reusable": {
 					BoolValue: true,
 				},
 			},

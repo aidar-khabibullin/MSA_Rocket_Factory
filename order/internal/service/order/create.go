@@ -5,11 +5,14 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/order/internal/model"
+	"github.com/aidar-khabibullin/MSA_Rocket_Factory/platform/pkg/logger"
 	"github.com/aidar-khabibullin/MSA_Rocket_Factory/platform/pkg/tracing"
 )
 
@@ -108,10 +111,24 @@ func (s service) CreateOrder(ctx context.Context, order *model.Order) (*model.Or
 
 	order.Status = model.StatusPendingPayment
 
+	// Резервируем детали под заказ до его сохранения: при нехватке остатка заказ не создаётся вовсе.
+	// UUID выдаётся заранее, чтобы резерв и заказ были связаны одним идентификатором.
+	order.OrderUUID = uuid.New()
+	span.AddEvent("reserving parts in inventory")
+	if err := s.inventoryClient.ReserveParts(ctx, order.OrderUUID, order.PartUUIDs); err != nil {
+		span.RecordError(err)
+		span.SetStatus(codes.Error, err.Error())
+		span.End()
+		return nil, fmt.Errorf("service: failed to reserve parts: %w", err)
+	}
+
 	// Сохраняем заказ в хранилище
 	span.AddEvent("saving order to repository")
+	reservedFor := order.OrderUUID
 	order, err = s.orderRepository.CreateOrder(ctx, order)
 	if err != nil {
+		// Заказ не сохранился, а детали уже зарезервированы: снимаем резерв, иначе остатки «зависнут».
+		s.releaseReservation(ctx, reservedFor)
 		span.RecordError(err)
 		span.SetStatus(codes.Error, err.Error())
 		span.End()
@@ -131,4 +148,13 @@ func (s service) CreateOrder(ctx context.Context, order *model.Order) (*model.Or
 	span.SetStatus(codes.Ok, "order created successfully")
 	span.End()
 	return order, nil
+}
+
+// releaseReservation снимает резерв деталей. Ошибка не прерывает вызывающий сценарий (заказ уже отменён
+// или не создан) и только логируется: резерв остаётся, пока его не снимет повторная отмена или оператор.
+func (s service) releaseReservation(ctx context.Context, orderUUID uuid.UUID) {
+	if err := s.inventoryClient.ReleaseParts(ctx, orderUUID); err != nil {
+		logger.Error(ctx, "Failed to release reserved parts; stock stays reserved",
+			zap.String("order_uuid", orderUUID.String()), zap.Error(err))
+	}
 }

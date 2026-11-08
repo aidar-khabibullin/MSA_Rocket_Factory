@@ -41,6 +41,7 @@ type diContainer struct {
 	iamGRPCConn                *grpc.ClientConn
 	iamGRPCClient              iamV1.UserServiceClient
 	orderPaidConsumerGroup     sarama.ConsumerGroup
+	dlqProducer                sarama.SyncProducer
 	shipAssembledConsumerGroup sarama.ConsumerGroup
 	orderPaidKafkaConsumer     wrappedKafka.Consumer
 	shipAssembledKafkaConsumer wrappedKafka.Consumer
@@ -298,6 +299,29 @@ func (d *diContainer) telegramClientUnsafe(ctx context.Context) telegramClient.T
 	return d.telegramClient
 }
 
+// DLQProducer — producer для отправки необработанных сообщений в <топик>.dlq.
+func (d *diContainer) DLQProducer() sarama.SyncProducer {
+	if d.dlqProducer == nil {
+		cfg := sarama.NewConfig()
+		cfg.Version = sarama.V2_8_0_0
+		cfg.Producer.Return.Successes = true
+		cfg.Producer.RequiredAcks = sarama.WaitForAll
+		cfg.Producer.Retry.Max = 3
+
+		p, err := sarama.NewSyncProducer(config.AppConfig().Kafka.Brokers(), cfg)
+		if err != nil {
+			panic(fmt.Sprintf("failed to create DLQ producer: %s\n", err.Error()))
+		}
+		closer.AddNamed("Kafka DLQ producer", func(ctx context.Context) error {
+			return p.Close()
+		})
+
+		d.dlqProducer = p
+	}
+
+	return d.dlqProducer
+}
+
 func (d *diContainer) OrderPaidConsumerGroup(ctx context.Context) sarama.ConsumerGroup {
 	if d.orderPaidConsumerGroup == nil {
 		consumerGroup, err := sarama.NewConsumerGroup(
@@ -349,6 +373,9 @@ func (d *diContainer) OrderPaidKafkaConsumer(ctx context.Context) wrappedKafka.C
 
 		// Создаем middleware для метрик
 		var middlewares []wrappedKafkaConsumer.Middleware
+		if dedup := d.dedupMiddleware(ctx, "notification-order-paid", config.AppConfig().OrderPaidConsumer.GroupID(), orderPaidEventID, kafkaMetrics); dedup != nil {
+			middlewares = append(middlewares, dedup)
+		}
 
 		if kafkaMetrics != nil {
 			// Создаем адаптер для middleware
@@ -375,7 +402,7 @@ func (d *diContainer) OrderPaidKafkaConsumer(ctx context.Context) wrappedKafka.C
 			logger.Logger(),
 			middlewares,
 			consumerGroupMiddlewares,
-		)
+		).WithResilience(kafkaMiddleware.ConsumerResilience(kafkaMetrics, config.AppConfig().OrderPaidConsumer.GroupID(), wrappedKafkaConsumer.NewDLQPublisher(d.DLQProducer())))
 	}
 
 	return d.orderPaidKafkaConsumer
@@ -388,6 +415,9 @@ func (d *diContainer) ShipAssembledKafkaConsumer(ctx context.Context) wrappedKaf
 
 		// Создаем middleware для метрик
 		var middlewares []wrappedKafkaConsumer.Middleware
+		if dedup := d.dedupMiddleware(ctx, "notification-ship-assembled", config.AppConfig().ShipAssembledConsumer.GroupID(), shipAssembledEventID, kafkaMetrics); dedup != nil {
+			middlewares = append(middlewares, dedup)
+		}
 
 		if kafkaMetrics != nil {
 			// Создаем адаптер для middleware
@@ -414,7 +444,7 @@ func (d *diContainer) ShipAssembledKafkaConsumer(ctx context.Context) wrappedKaf
 			logger.Logger(),
 			middlewares,
 			consumerGroupMiddlewares,
-		)
+		).WithResilience(kafkaMiddleware.ConsumerResilience(kafkaMetrics, config.AppConfig().ShipAssembledConsumer.GroupID(), wrappedKafkaConsumer.NewDLQPublisher(d.DLQProducer())))
 	}
 
 	return d.shipAssembledKafkaConsumer

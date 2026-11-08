@@ -57,6 +57,22 @@ func (_m *PaymentService) Pay(ctx context.Context, Order model.Order) (uuid.UUID
 	return r0, r1
 }
 
+// Refund provides a mock function with given fields: ctx, orderUUID, transactionUUID
+func (_m *PaymentService) Refund(ctx context.Context, orderUUID uuid.UUID, transactionUUID uuid.UUID) (uuid.UUID, error) {
+	ret := _m.Called(ctx, orderUUID, transactionUUID)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Refund")
+	}
+
+	var r0 uuid.UUID
+	if ret.Get(0) != nil {
+		r0 = ret.Get(0).(uuid.UUID)
+	}
+
+	return r0, ret.Error(1)
+}
+
 // PaymentService_Pay_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'Pay'
 type PaymentService_Pay_Call struct {
 	*mock.Call

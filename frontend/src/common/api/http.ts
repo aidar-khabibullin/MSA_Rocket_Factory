@@ -60,7 +60,7 @@ export async function http<T>(path: string, options: RequestOptions = {}): Promi
       method,
       json: body,
       signal,
-      headers: sessionUuid ? { 'X-Session-Uuid': sessionUuid } : undefined,
+      headers: sessionUuid ? { 'Session-Uuid': sessionUuid } : undefined,
     })
     if (response.status === 204) return undefined as T
     return (await response.json()) as T

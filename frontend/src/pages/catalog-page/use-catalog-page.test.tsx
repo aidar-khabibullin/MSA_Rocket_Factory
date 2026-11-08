@@ -13,9 +13,9 @@ const part = (uuid: string, name: string, category: string) => ({
   name,
   description: '',
   price: 100,
-  stock_quantity: 5,
+  stock_quantity: '5', // int64 в proto-JSON приходит строкой
   category,
-  manufacturer: { name: 'ACME', country: 'US', website: '' },
+  manufacturer: { name: 'ACME', country: 'US', url: '' },
   tags: [],
 })
 
@@ -39,7 +39,7 @@ describe('useCatalogPage: фильтры в URL', () => {
     useSessionStore.setState({ session: { sessionUuid: 's1', userUuid: 'u1', login: 'demo' } })
     vi.stubGlobal(
       'fetch',
-      vi.fn(async () => new Response(JSON.stringify(PARTS), { status: 200 })),
+      vi.fn(async () => new Response(JSON.stringify({ parts: PARTS }), { status: 200 })),
     )
   })
   afterEach(() => vi.unstubAllGlobals())

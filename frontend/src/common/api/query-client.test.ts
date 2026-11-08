@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { ApiError } from './http'
+import { ApiError, http } from './http'
 import { onUnauthorized, queryClient } from './query-client'
 
 describe('queryClient: обработка 401', () => {
@@ -42,5 +42,27 @@ describe('queryClient: обработка 401', () => {
       .catch(() => undefined)
 
     expect(handler).not.toHaveBeenCalled()
+  })
+
+  it('401 от Envoy в формате {code, message, details} доходит до обработчика с сообщением сервера', async () => {
+    const handler = vi.fn<() => void>()
+    onUnauthorized(handler)
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockResolvedValue(
+        new Response(JSON.stringify({ code: 16, message: 'session not found', details: [] }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      ),
+    )
+
+    const error = await queryClient
+      .fetchQuery({ queryKey: ['envoy-401'], queryFn: () => http('/api/auth/me', { sessionUuid: 'dead' }) })
+      .catch((caught: unknown) => caught)
+    vi.unstubAllGlobals()
+
+    expect(error).toMatchObject({ status: 401, message: 'session not found' })
+    expect(handler).toHaveBeenCalledOnce()
   })
 })

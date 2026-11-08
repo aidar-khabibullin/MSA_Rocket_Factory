@@ -16,7 +16,7 @@ describe('AuthForm', () => {
     const fetchMock = vi
       .fn<typeof fetch>()
       .mockResolvedValueOnce(json({ session_uuid: 'sess-1' }))
-      .mockResolvedValueOnce(json({ user_uuid: 'user-1', login: 'demo', email: 'd@x.io' }))
+      .mockResolvedValueOnce(json({ session: { uuid: 'sess-1' }, user: { uuid: 'user-1', info: { login: 'demo', email: 'd@x.io' } } }))
     vi.stubGlobal('fetch', fetchMock)
 
     render(<AuthForm mode="login" />)
@@ -29,6 +29,30 @@ describe('AuthForm', () => {
       '/api/auth/login',
       '/api/auth/me',
     ])
+  })
+
+  it('регистрация: отправляет вложенное тело и затем входит', async () => {
+    const bodies: string[] = []
+    const fetchMock = vi.fn<typeof fetch>(async (input) => {
+      const request = input as Request
+      bodies.push(await request.clone().text())
+      const { pathname } = new URL(request.url)
+      if (pathname === '/api/auth/register') return json({ user_uuid: 'user-1' })
+      if (pathname === '/api/auth/login') return json({ session_uuid: 'sess-1' })
+      return json({ session: { uuid: 'sess-1' }, user: { uuid: 'user-1', info: { login: 'demo', email: 'd@x.io' } } })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    render(<AuthForm mode="register" />)
+    await userEvent.type(screen.getByLabelText(/логин/i), 'demo')
+    await userEvent.type(screen.getByLabelText(/почта|email/i), 'd@x.io')
+    await userEvent.type(screen.getByLabelText(/пароль/i), 'Secret123!')
+    await userEvent.click(screen.getByRole('button', { name: /зарегистрироваться|создать/i }))
+
+    await waitFor(() => expect(getSession()).toEqual({ sessionUuid: 'sess-1', userUuid: 'user-1', login: 'demo' }))
+    expect(JSON.parse(bodies[0] ?? '{}')).toEqual({
+      info: { user_info: { login: 'demo', email: 'd@x.io' }, password: 'Secret123!' },
+    })
   })
 
   it('показывает ошибку сервера и не создаёт сессию', async () => {

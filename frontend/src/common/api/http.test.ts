@@ -31,7 +31,7 @@ describe('http', () => {
     expect(request.method).toBe('POST')
     expect(sentBody).toBe('{"a":1}')
     expect(request.headers.get('Content-Type')).toBe('application/json')
-    expect(request.headers.get('X-Session-Uuid')).toBe('sess')
+    expect(request.headers.get('Session-Uuid')).toBe('sess')
   })
 
   it('не добавляет Content-Type без тела и сессии', async () => {
@@ -42,7 +42,7 @@ describe('http', () => {
 
     const { headers } = sentRequest(fetchMock)
     expect(headers.has('Content-Type')).toBe(false)
-    expect(headers.has('X-Session-Uuid')).toBe(false)
+    expect(headers.has('Session-Uuid')).toBe(false)
   })
 
   it('возвращает undefined на 204', async () => {
@@ -54,6 +54,7 @@ describe('http', () => {
   it.each([
     ['{message}', { message: 'из message' }, 'из message'],
     ['{error_message}', { error_message: 'из error_message' }, 'из error_message'],
+    ['{code, message, details} от Envoy', { code: 16, message: 'invalid session', details: [] }, 'invalid session'],
     ['{error: {message}}', { error: { code: 'X', message: 'вложенное' } }, 'вложенное'],
   ])('достаёт сообщение об ошибке из формы %s', async (_name, body, expected) => {
     vi.stubGlobal('fetch', respond(400, body))

@@ -39,13 +39,14 @@ describe('OrderPage: отмена заказа', () => {
 
   it('требует подтверждения и отменяет заказ только после него', async () => {
     let status = 'PENDING_PAYMENT'
-    const fetchMock = vi.fn<(url: string, init?: RequestInit) => Promise<Response>>(async (url, init) => {
-      if (url.endsWith('/cancel')) {
+    const fetchMock = vi.fn<(request: Request) => Promise<Response>>(async (request) => {
+      const { pathname } = new URL(request.url)
+      if (pathname.endsWith('/cancel')) {
         status = 'CANCELLED'
         return new Response(null, { status: 204 })
       }
-      if (url.startsWith('/api/parts')) return json([])
-      return init?.method === 'POST' ? json({}) : json(order(status))
+      if (pathname.startsWith('/api/parts')) return json([])
+      return request.method === 'POST' ? json({}) : json(order(status))
     })
     vi.stubGlobal('fetch', fetchMock)
     renderPage()
@@ -54,17 +55,17 @@ describe('OrderPage: отмена заказа', () => {
 
     // Один клик ничего не отправляет: сначала вопрос.
     const dialog = await screen.findByRole('alertdialog', { name: 'Отменить заказ?' })
-    expect(fetchMock.mock.calls.some(([url]) => url.endsWith('/cancel'))).toBe(false)
+    expect(fetchMock.mock.calls.some(([request]) => new URL(request.url).pathname.endsWith('/cancel'))).toBe(false)
 
     await userEvent.click(within(dialog).getByRole('button', { name: 'Да, отменить' }))
 
-    await waitFor(() => expect(fetchMock.mock.calls.some(([url]) => url.endsWith('/cancel'))).toBe(true))
+    await waitFor(() => expect(fetchMock.mock.calls.some(([request]) => new URL(request.url).pathname.endsWith('/cancel'))).toBe(true))
     expect(await screen.findByText('Заказ отменён', { selector: 'span' })).toBeInTheDocument()
   })
 
   it('отказ в диалоге не отправляет запрос', async () => {
-    const fetchMock = vi.fn<(url: string) => Promise<Response>>(async (url) =>
-      url.startsWith('/api/parts') ? json([]) : json(order('PENDING_PAYMENT')),
+    const fetchMock = vi.fn<(request: Request) => Promise<Response>>(async (request) =>
+      new URL(request.url).pathname.startsWith('/api/parts') ? json([]) : json(order('PENDING_PAYMENT')),
     )
     vi.stubGlobal('fetch', fetchMock)
     renderPage()
@@ -73,6 +74,6 @@ describe('OrderPage: отмена заказа', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Оставить заказ' }))
 
     await waitFor(() => expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument())
-    expect(fetchMock.mock.calls.some(([url]) => url.endsWith('/cancel'))).toBe(false)
+    expect(fetchMock.mock.calls.some(([request]) => new URL(request.url).pathname.endsWith('/cancel'))).toBe(false)
   })
 })

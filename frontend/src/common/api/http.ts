@@ -1,3 +1,5 @@
+import ky, { isHTTPError } from 'ky'
+
 import { i18n } from '@/common/i18n'
 
 export class ApiError extends Error {
@@ -20,6 +22,12 @@ interface RequestOptions {
   signal?: AbortSignal
 }
 
+/**
+ * Повторы отключены: POST (оплата, создание заказа) нельзя безопасно повторять вслепую, а ошибки показываем сразу.
+ * baseUrl нужен, чтобы относительные пути работали и там, где Request не знает о location (jsdom в тестах).
+ */
+const client = ky.create({ retry: 0, timeout: false, baseUrl: globalThis.location.origin })
+
 /** Сервисы отдают ошибки в разных формах: {message}, {error_message}, {error: {message}}. */
 function extractMessage(body: unknown): string | undefined {
   if (typeof body !== 'object' || body === null) return undefined
@@ -34,9 +42,11 @@ function extractMessage(body: unknown): string | undefined {
   return undefined
 }
 
-function parseJSON(text: string): unknown {
+/** ky разбирает тело ошибки только при Content-Type: application/json; иначе оно приходит строкой. */
+function errorBody(data: unknown): unknown {
+  if (typeof data !== 'string') return data
   try {
-    return JSON.parse(text)
+    return JSON.parse(data)
   } catch {
     return undefined
   }
@@ -45,30 +55,23 @@ function parseJSON(text: string): unknown {
 export async function http<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { method = 'GET', body, sessionUuid, signal } = options
 
-  const headers = new Headers()
-  if (body !== undefined) headers.set('Content-Type', 'application/json')
-  if (sessionUuid) headers.set('X-Session-Uuid', sessionUuid)
-
-  let response: Response
   try {
-    response = await fetch(path, {
+    const response = await client(path, {
       method,
-      headers,
+      json: body,
       signal,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      headers: sessionUuid ? { 'X-Session-Uuid': sessionUuid } : undefined,
     })
+    if (response.status === 204) return undefined as T
+    return (await response.json()) as T
   } catch (error) {
+    if (isHTTPError(error)) {
+      const { status } = error.response
+      throw new ApiError(status, extractMessage(errorBody(error.data)) ?? i18n.t('errors.status', { status }))
+    }
     if (error instanceof DOMException && error.name === 'AbortError') throw error
     throw new ApiError(NETWORK_ERROR, i18n.t('errors.network'))
   }
-
-  const text = response.status === 204 ? '' : await response.text()
-  const payload = text ? parseJSON(text) : undefined
-
-  if (!response.ok) {
-    throw new ApiError(response.status, extractMessage(payload) ?? i18n.t('errors.status', { status: response.status }))
-  }
-  return payload as T
 }
 
 /** Сообщение для пользователя из любой ошибки. */

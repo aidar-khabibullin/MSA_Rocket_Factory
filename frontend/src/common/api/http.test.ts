@@ -6,21 +6,32 @@ function respond(status: number, body?: unknown) {
   return vi.fn<typeof fetch>().mockResolvedValue(new Response(status === 204 ? null : text, { status }))
 }
 
+/** ky вызывает fetch с готовым Request. */
+function sentRequest(fetchMock: { mock: { calls: unknown[][] } }): Request {
+  const [request] = fetchMock.mock.calls[0] ?? []
+  if (!(request instanceof Request)) throw new Error('fetch не вызван с Request')
+  return request
+}
+
 describe('http', () => {
   afterEach(() => vi.unstubAllGlobals())
 
   it('отправляет JSON и заголовок сессии', async () => {
-    const fetchMock = respond(200, { ok: true })
+    // Тело читаем внутри мока: после вызова fetch Request уже использован.
+    let sentBody = ''
+    const fetchMock = vi.fn<typeof fetch>(async (input) => {
+      sentBody = await (input as Request).clone().text()
+      return new Response('{}', { status: 200 })
+    })
     vi.stubGlobal('fetch', fetchMock)
 
     await http('/api/x', { method: 'POST', body: { a: 1 }, sessionUuid: 'sess' })
 
-    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit]
-    const headers = init.headers as Headers
-    expect(init.method).toBe('POST')
-    expect(init.body).toBe('{"a":1}')
-    expect(headers.get('Content-Type')).toBe('application/json')
-    expect(headers.get('X-Session-Uuid')).toBe('sess')
+    const request = sentRequest(fetchMock)
+    expect(request.method).toBe('POST')
+    expect(sentBody).toBe('{"a":1}')
+    expect(request.headers.get('Content-Type')).toBe('application/json')
+    expect(request.headers.get('X-Session-Uuid')).toBe('sess')
   })
 
   it('не добавляет Content-Type без тела и сессии', async () => {
@@ -29,7 +40,7 @@ describe('http', () => {
 
     await http('/api/x')
 
-    const headers = (fetchMock.mock.calls[0] as [string, RequestInit])[1].headers as Headers
+    const { headers } = sentRequest(fetchMock)
     expect(headers.has('Content-Type')).toBe(false)
     expect(headers.has('X-Session-Uuid')).toBe(false)
   })

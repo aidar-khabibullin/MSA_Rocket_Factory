@@ -25,7 +25,10 @@ describe('AuthForm', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Войти' }))
 
     await waitFor(() => expect(getSession()).toEqual({ sessionUuid: 'sess-1', userUuid: 'user-1', login: 'demo' }))
-    expect(fetchMock.mock.calls.map((call) => call[0])).toEqual(['/api/auth/login', '/api/auth/me'])
+    expect(fetchMock.mock.calls.map(([request]) => new URL((request as Request).url).pathname)).toEqual([
+      '/api/auth/login',
+      '/api/auth/me',
+    ])
   })
 
   it('показывает ошибку сервера и не создаёт сессию', async () => {

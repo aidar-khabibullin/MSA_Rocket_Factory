@@ -8,7 +8,7 @@ import { formatTime } from '@/common/lib/format'
 import { useServiceStatus } from '../hooks/use-service-status'
 
 /** Подробный статус для разработчика: показывается только в dev-сборке (см. Footer). */
-export function ServiceStatusPanel() {
+export const ServiceStatusPanel = () => {
   const { t } = useTranslation('system')
   const { services, checkedAt, isGatewayDown, isDegraded, isChecking, refresh } = useServiceStatus()
 

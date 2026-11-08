@@ -15,7 +15,7 @@ onUnauthorized(() => {
   toastService.showWarning(i18n.t('toast.sessionExpired'))
 })
 
-export function App() {
+export const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <RouterProvider router={router} />

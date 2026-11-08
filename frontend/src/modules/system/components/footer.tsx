@@ -9,7 +9,7 @@ import { ServiceStatusPanel } from './service-status-panel'
 const SHOW_SERVICE_STATUS = import.meta.env.DEV
 const YEAR = new Date().getFullYear()
 
-export function Footer() {
+export const Footer = () => {
   const { t } = useTranslation('system')
   return (
     <footer className="border-t border-border/60 bg-background/60">

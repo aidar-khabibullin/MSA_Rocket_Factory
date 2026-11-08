@@ -1,7 +1,7 @@
 import { Alert } from '@heroui/react/alert'
 import { useTranslation } from 'react-i18next'
 
-export function ErrorAlert({ message }: { message: string | null | undefined }) {
+export const ErrorAlert = ({ message }: { message: string | null | undefined }) => {
   const { t } = useTranslation()
   if (!message) return null
   return (

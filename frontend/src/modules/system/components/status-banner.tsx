@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useServiceStatus } from '../hooks/use-service-status'
 
 /** Для пользователя виден только факт проблемы, без названий внутренних сервисов. */
-export function StatusBanner() {
+export const StatusBanner = () => {
   const { t } = useTranslation('system')
   const { isDegraded, isChecking, refresh } = useServiceStatus()
   if (!isDegraded) return null

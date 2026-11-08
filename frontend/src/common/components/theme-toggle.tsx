@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next'
 
 import { useTheme } from '@/common/lib/theme'
 
-export function ThemeToggle() {
+export const ThemeToggle = () => {
   const { t } = useTranslation()
   const { theme, toggle } = useTheme()
   const isDark = theme === 'dark'

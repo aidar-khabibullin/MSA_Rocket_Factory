@@ -78,7 +78,7 @@ export const PartCard = memo(function PartCard({ part, selected, onToggle, index
   )
 })
 
-export function PartCardSkeleton() {
+export const PartCardSkeleton = () => {
   return (
     <div
       className="flex h-64 animate-pulse flex-col gap-4 rounded-2xl border border-border bg-surface p-5"

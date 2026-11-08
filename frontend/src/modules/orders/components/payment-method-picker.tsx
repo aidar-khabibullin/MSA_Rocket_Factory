@@ -8,7 +8,7 @@ interface PaymentMethodPickerProps {
 }
 
 /** Нативные radio внутри fieldset: клавиатура и скринридеры работают без дополнительного кода. */
-export function PaymentMethodPicker({ value, onChange }: PaymentMethodPickerProps) {
+export const PaymentMethodPicker = ({ value, onChange }: PaymentMethodPickerProps) => {
   const { t } = useTranslation('orders')
   return (
     <fieldset className="flex flex-col gap-3">

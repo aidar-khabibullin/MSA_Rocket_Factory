@@ -9,7 +9,7 @@ export function groupPartUuids(partUuids: readonly string[]): Array<{ id: string
   return Array.from(counts, ([id, quantity]) => ({ id, quantity }))
 }
 
-export function OrderComposition({ partUuids }: { partUuids: readonly string[] }) {
+export const OrderComposition = ({ partUuids }: { partUuids: readonly string[] }) => {
   const { t } = useTranslation('orders')
   const index = usePartsIndex()
 

@@ -13,7 +13,7 @@ interface CartBarProps {
   onCheckout: () => void
 }
 
-export function CartBar({ count, total, isPending, onClear, onCheckout }: CartBarProps) {
+export const CartBar = ({ count, total, isPending, onClear, onCheckout }: CartBarProps) => {
   const { t } = useTranslation('catalog')
   return (
     <div className="fixed inset-x-0 bottom-4 z-30 px-4">

@@ -5,7 +5,7 @@ const SIZES = {
   lg: { box: 'size-12', icon: 'size-7', text: 'text-2xl' },
 } as const
 
-export function Logo({ size = 'md' }: { size?: keyof typeof SIZES }) {
+export const Logo = ({ size = 'md' }: { size?: keyof typeof SIZES }) => {
   const { box, icon, text } = SIZES[size]
   return (
     <span className="flex items-center gap-3">

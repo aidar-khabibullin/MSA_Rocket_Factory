@@ -20,7 +20,7 @@ import { signIn } from '../store/session.store'
 const FIELD = 'flex flex-col gap-2'
 
 /** Форму пересоздаёт родитель через key={mode}: пароль и ошибка сбрасываются без эффектов. */
-export function AuthForm({ mode }: { mode: AuthMode }) {
+export const AuthForm = ({ mode }: { mode: AuthMode }) => {
   const { t } = useTranslation('auth')
   const isRegister = mode === 'register'
   const formRef = useRef<HTMLFormElement>(null)

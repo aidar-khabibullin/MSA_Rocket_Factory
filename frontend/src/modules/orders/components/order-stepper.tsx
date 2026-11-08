@@ -6,7 +6,7 @@ import type { OrderStatus } from '../model/order'
 
 import { PROGRESS_STEPS, reachedStep } from '../model/status'
 
-export function OrderStepper({ status }: { status: OrderStatus }) {
+export const OrderStepper = ({ status }: { status: OrderStatus }) => {
   const { t } = useTranslation('orders')
   const reached = reachedStep(status)
 

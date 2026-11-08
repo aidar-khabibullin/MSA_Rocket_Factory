@@ -20,7 +20,7 @@ interface ConfirmDialogProps {
  * Подтверждение необратимого действия. Управляется снаружи (isOpen), поэтому открывать его может
  * любой код, а не только кнопка-триггер. Escape и клик по фону закрывают окно, пока идёт запрос — нет.
  */
-export function ConfirmDialog({
+export const ConfirmDialog = ({
   isOpen,
   onOpenChange,
   title,
@@ -30,7 +30,7 @@ export function ConfirmDialog({
   onConfirm,
   isPending = false,
   status = 'danger',
-}: ConfirmDialogProps) {
+}: ConfirmDialogProps) => {
   return (
     <AlertDialog.Backdrop
       isOpen={isOpen}

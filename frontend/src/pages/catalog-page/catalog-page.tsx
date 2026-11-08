@@ -11,7 +11,7 @@ import { useCatalogPage } from './use-catalog-page'
 
 const SKELETONS = [0, 1, 2] as const
 
-export function CatalogPage() {
+export const CatalogPage = () => {
   const { t } = useTranslation('catalog')
   const {
     parts,

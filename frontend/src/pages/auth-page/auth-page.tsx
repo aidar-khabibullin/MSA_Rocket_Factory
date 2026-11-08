@@ -13,7 +13,7 @@ const YEAR = new Date().getFullYear()
 
 const BENEFITS = ['catalog', 'flow', 'notify'] as const
 
-export function AuthPage() {
+export const AuthPage = () => {
   const { t } = useTranslation('auth')
   const session = useSession()
   const [mode, setMode] = useState<AuthMode>('login')

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { PASSWORD_RULES } from '../model/password-rules'
 
 /** Чек-лист требований: статус передаётся иконкой и текстом для скринридера, а не только цветом. */
-export function PasswordChecklist({ value }: { value: string }) {
+export const PasswordChecklist = ({ value }: { value: string }) => {
   const { t } = useTranslation('auth')
   return (
     <ul className="grid grid-cols-1 gap-x-4 gap-y-1.5 pt-1 text-xs sm:grid-cols-2" aria-label={t('passwordRules.title')}>

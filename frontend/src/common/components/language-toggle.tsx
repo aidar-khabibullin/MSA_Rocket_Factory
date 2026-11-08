@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { LANGUAGES, useLanguageStore } from '@/common/i18n'
 
 /** Кнопка показывает язык, на который переключит: так не нужен выпадающий список для двух вариантов. */
-export function LanguageToggle() {
+export const LanguageToggle = () => {
   const { t } = useTranslation()
   const language = useLanguageStore((state) => state.language)
   const setLanguage = useLanguageStore((state) => state.setLanguage)

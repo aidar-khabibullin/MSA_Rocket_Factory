@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { isRouteErrorResponse, useRouteError } from 'react-router-dom'
 
 /** Граница ошибок роутера: сбой в странице или в загрузке чанка не должен давать белый экран. */
-export function RouteError({ inline = false }: { inline?: boolean }) {
+export const RouteError = ({ inline = false }: { inline?: boolean }) => {
   const { t } = useTranslation()
   const error = useRouteError()
   const message = isRouteErrorResponse(error)

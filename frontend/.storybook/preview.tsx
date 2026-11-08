@@ -4,7 +4,6 @@ import { i18n } from '@/common/i18n' // язык определяется до �
 import '@/modules/auth/locales'
 import '@/modules/catalog/locales'
 import '@/modules/orders/locales'
-import '@/modules/system/locales'
 import '@/global/index.css'
 
 /** Тему приложения ставит класс на <html>; переключатель на панели Storybook делает то же самое. */

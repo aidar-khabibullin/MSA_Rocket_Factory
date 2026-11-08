@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Navigate, Outlet } from 'react-router-dom'
 
 import { signOut, useSession } from '@/modules/auth'
-import { Footer, StatusBanner } from '@/modules/system'
+import { Footer } from '@/common/components/footer'
 import { Logo } from '@/common/components/logo'
 import { LanguageToggle } from '@/common/components/language-toggle'
 import { ThemeToggle } from '@/common/components/theme-toggle'
@@ -45,7 +45,6 @@ export const Layout = () => {
         <Navigation className="mx-auto flex max-w-6xl gap-1 px-4 pb-2 sm:hidden" />
       </header>
 
-      <StatusBanner />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6">
         <Outlet />
       </main>

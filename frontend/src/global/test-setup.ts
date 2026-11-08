@@ -6,7 +6,6 @@ import { i18n, useLanguageStore } from '@/common/i18n'
 import '@/modules/auth/locales'
 import '@/modules/catalog/locales'
 import '@/modules/orders/locales'
-import '@/modules/system/locales'
 
 /**
  * Node 25 подставляет в globalThis собственный экспериментальный localStorage без методов,

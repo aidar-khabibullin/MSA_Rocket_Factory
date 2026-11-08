@@ -27,5 +27,11 @@
   },
   "toast": {
     "sessionExpired": "Your session has expired. Please sign in again."
+  },
+  "footer": {
+    "tagline": "Rocket parts: choose, order, pay and assemble in one place.",
+    "sections": "Sections",
+    "catalog": "Parts catalog",
+    "orders": "My orders"
   }
 }

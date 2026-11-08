@@ -4,8 +4,6 @@ import catalogEn from '@/modules/catalog/locales/en.json'
 import catalogRu from '@/modules/catalog/locales/ru.json'
 import ordersEn from '@/modules/orders/locales/en.json'
 import ordersRu from '@/modules/orders/locales/ru.json'
-import systemEn from '@/modules/system/locales/en.json'
-import systemRu from '@/modules/system/locales/ru.json'
 
 import commonEn from '@/common/i18n/locales/en/common.json'
 import commonRu from '@/common/i18n/locales/ru/common.json'
@@ -32,7 +30,6 @@ const DICTIONARIES = {
   auth: [authRu, authEn],
   catalog: [catalogRu, catalogEn],
   orders: [ordersRu, ordersEn],
-  system: [systemRu, systemEn],
 } as const
 
 describe('словари', () => {

@@ -2,6 +2,7 @@
 # - /api/auth/*, /api/parts: REST/JSON -> gRPC для iam и inventory делает gRPC-JSON transcoder по аннотациям google.api.http в proto.
 # - /api/v1: проксируется в order по HTTP.
 # - CORS для origin Vite, реальный адрес клиента в x-forwarded-for.
+# - Защита входа: общий rate limit (429) и лимит размера тела запроса (413).
 # Дескриптор /etc/envoy/proto.pb собирается задачей `task proto:descriptor` и не хранится в git.
 admin:
   # Слушаем только внутри контейнера: порт нужен healthcheck'у и не публикуется наружу.
@@ -82,6 +83,30 @@ static_resources:
                   - name: envoy.filters.http.cors
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.Cors
+                  # Общий лимит на экземпляр Envoy: защищает от всплеска запросов. Лимит попыток входа по адресу клиента
+                  # отдельно держит iam. При превышении Envoy отвечает 429 и заголовком x-local-rate-limit.
+                  - name: envoy.filters.http.local_ratelimit
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                      stat_prefix: ingress_local_rate_limit
+                      token_bucket:
+                        max_tokens: 200
+                        tokens_per_fill: 100
+                        fill_interval: 1s
+                      filter_enabled:
+                        runtime_key: local_rate_limit_enabled
+                        default_value: { numerator: 100, denominator: HUNDRED }
+                      filter_enforced:
+                        runtime_key: local_rate_limit_enforced
+                        default_value: { numerator: 100, denominator: HUNDRED }
+                      response_headers_to_add:
+                        - append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                          header: { key: x-local-rate-limit, value: "true" }
+                  # Тело запроса больше 1 МиБ отклоняется с 413: все JSON-запросы API заметно меньше.
+                  - name: envoy.filters.http.buffer
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.buffer.v3.Buffer
+                      max_request_bytes: 1048576
                   - name: envoy.filters.http.grpc_json_transcoder
                     typed_config:
                       "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_json_transcoder.v3.GrpcJsonTranscoder

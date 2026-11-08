@@ -38,6 +38,9 @@ jobs:
 
       - name: 📌 Install Task
         uses: arduino/setup-task@v2.0.0
+        with:
+          version: 3.x
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 📄 Подготовка окружения для тестов
         env:

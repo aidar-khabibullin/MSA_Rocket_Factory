@@ -256,7 +256,7 @@ func runMigrations(ctx context.Context, connStr string) error {
 		return fmt.Errorf("не удалось установить диалект postgres: %w", err)
 	}
 
-	migrationsDir := path.GetProjectRoot() + "/order/migrations"
+	migrationsDir := path.GetProjectRoot() + "/backend/order/migrations"
 	if err := goose.Up(sqlDB, migrationsDir); err != nil {
 		return fmt.Errorf("не удалось выполнить миграции: %w", err)
 	}

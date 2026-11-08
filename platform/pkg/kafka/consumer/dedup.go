@@ -2,6 +2,7 @@ package consumer
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -82,22 +83,23 @@ func NewRedisDedupStore(pool *redis.Pool) DedupStore {
 	return &redisDedupStore{pool: pool}
 }
 
-func (s *redisDedupStore) Seen(ctx context.Context, key string) (bool, error) {
+func (s *redisDedupStore) Seen(ctx context.Context, key string) (seen bool, err error) {
 	conn, err := s.pool.GetContext(ctx)
 	if err != nil {
 		return false, err
 	}
-	defer func() { _ = conn.Close() }()
+	// Ошибка закрытия соединения не теряется: она добавляется к результату операции.
+	defer func() { err = errors.Join(err, conn.Close()) }()
 
 	return redis.Bool(conn.Do("EXISTS", key))
 }
 
-func (s *redisDedupStore) Mark(ctx context.Context, key string, ttl time.Duration) error {
+func (s *redisDedupStore) Mark(ctx context.Context, key string, ttl time.Duration) (err error) {
 	conn, err := s.pool.GetContext(ctx)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = conn.Close() }()
+	defer func() { err = errors.Join(err, conn.Close()) }()
 
 	_, err = conn.Do("SET", key, "1", "PX", ttl.Milliseconds())
 	return err

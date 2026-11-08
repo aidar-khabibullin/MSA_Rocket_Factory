@@ -19,6 +19,13 @@ services: # Раздел, описывающий контейнеры, кото�
       redis-iam:
         condition: service_healthy
 
+    healthcheck:
+      test: [ "CMD", "/app/grpc-health-probe", "-addr=127.0.0.1:50053" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
     restart: unless-stopped
 
     networks:

@@ -45,6 +45,9 @@ COPY --from=builder /etc/passwd /etc/passwd
 # Копируем бинарный файл
 COPY --from=builder /app/inventory/inventory-service /inventory-service
 
+# grpc-health-probe для healthcheck в docker compose (в scratch-образе нет shell и curl)
+COPY --from=builder /app/grpc-health-probe /grpc-health-probe
+
 # Открываем порт для gRPC
 EXPOSE 50051
 

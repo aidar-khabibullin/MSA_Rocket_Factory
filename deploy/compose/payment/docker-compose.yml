@@ -14,6 +14,13 @@ services: # Раздел, описывающий контейнеры, кото�
       - "${GRPC_PORT}:50052"
       - "${HTTP_PORT}:8080"
 
+    healthcheck:
+      test: [ "CMD", "/grpc-health-probe", "-addr=127.0.0.1:50052" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
     restart: unless-stopped
 
     networks:

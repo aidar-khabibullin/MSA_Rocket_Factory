@@ -422,15 +422,19 @@ func (s *ServiceSuite) TestCancelOrder_ConcurrentCancellation() {
 	s.orderRepository.On("GetOrder", mock.Anything, orderUUID).
 		Return(cancelledOrder, nil).Times(numGoroutines - 1)
 
-	results := make(chan *model.Order, numGoroutines)
-	errChan := make(chan error, numGoroutines)
+	// Результат и ошибка одного вызова передаются вместе: два отдельных канала
+	// могли перемешать пары от разных горутин и давали нестабильный тест.
+	type cancelOutcome struct {
+		order *model.Order
+		err   error
+	}
+	outcomes := make(chan cancelOutcome, numGoroutines)
 
 	// Запускаем горутины
 	for i := 0; i < numGoroutines; i++ {
 		go func() {
 			result, err := s.service.CancelOrder(context.Background(), inputOrder)
-			results <- result
-			errChan <- err
+			outcomes <- cancelOutcome{order: result, err: err}
 		}()
 	}
 
@@ -439,8 +443,8 @@ func (s *ServiceSuite) TestCancelOrder_ConcurrentCancellation() {
 	cancelledErrorCount := 0
 
 	for i := 0; i < numGoroutines; i++ {
-		result := <-results
-		err := <-errChan
+		outcome := <-outcomes
+		result, err := outcome.order, outcome.err
 
 		switch {
 		case err == nil:

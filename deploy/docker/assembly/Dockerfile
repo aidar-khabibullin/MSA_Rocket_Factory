@@ -8,9 +8,9 @@ RUN apk add --no-cache git
 WORKDIR /app
 
 # Копируем go.mod и go.sum файлы для кеширования зависимостей
-COPY assembly/go.mod assembly/go.sum ./assembly/
-COPY shared/go.mod shared/go.sum ./shared/
-COPY platform/go.mod platform/go.sum ./platform/
+COPY backend/assembly/go.mod backend/assembly/go.sum ./assembly/
+COPY backend/shared/go.mod backend/shared/go.sum ./shared/
+COPY backend/platform/go.mod backend/platform/go.sum ./platform/
 
 # Загружаем зависимости
 WORKDIR /app/assembly
@@ -18,9 +18,9 @@ RUN go mod download
 
 # Возвращаемся в корневую директорию и копируем исходный код
 WORKDIR /app
-COPY assembly/ ./assembly/
-COPY shared/ ./shared/
-COPY platform/ ./platform/
+COPY backend/assembly/ ./assembly/
+COPY backend/shared/ ./shared/
+COPY backend/platform/ ./platform/
 
 # Собираем приложение с оптимизациями
 WORKDIR /app/assembly

@@ -19,12 +19,12 @@
 
 ## В скоупе
 
-- gRPC `UserService` (`Register`, `GetUser`), `AuthService` (`Login`, `Whoami`), `JWTService` (`Login`, `GetAccessToken`, `GetRefreshToken`) — `shared/proto/iam`, `shared/proto/jwt`.
-- Хранение в PostgreSQL: таблицы `users`, `notification_methods`, `sessions` (миграции `iam/migrations`).
+- gRPC `UserService` (`Register`, `GetUser`), `AuthService` (`Login`, `Whoami`), `JWTService` (`Login`, `GetAccessToken`, `GetRefreshToken`) — `backend/shared/proto/iam`, `backend/shared/proto/jwt`.
+- Хранение в PostgreSQL: таблицы `users`, `notification_methods`, `sessions` (миграции `backend/iam/migrations`).
 - Хеширование паролей; проверка пароля с выравниванием времени ответа при неизвестном логине (`burnPasswordCheck`).
 - TTL токенов из конфигурации: access 15 минут, refresh 24 часа (по умолчанию).
 - Отзыв токенов (одного и всех токенов пользователя), см. [prd-iam-redis-session-cache.md](prd-iam-redis-session-cache.md).
-- Middleware проверки токена в `iam/internal/middleware`.
+- Middleware проверки токена в `backend/iam/internal/middleware`.
 
 ## Не в скоупе
 

@@ -1,0 +1,171 @@
+# Envoy: единая точка входа для браузерного фронтенда.
+# - /api/auth/*, /api/parts: REST/JSON -> gRPC для iam и inventory делает gRPC-JSON transcoder по аннотациям google.api.http в proto.
+# - /api/v1: проксируется в order по HTTP.
+# - CORS для origin Vite, реальный адрес клиента в x-forwarded-for.
+# - Защита входа: общий rate limit (429) и лимит размера тела запроса (413).
+# Дескриптор /etc/envoy/proto.pb собирается задачей `task proto:descriptor` и не хранится в git.
+admin:
+  # Слушаем только внутри контейнера: порт нужен healthcheck'у и не публикуется наружу.
+  address:
+    socket_address: { address: 127.0.0.1, port_value: 9901 }
+
+static_resources:
+  listeners:
+    - name: ingress
+      address:
+        socket_address: { address: 0.0.0.0, port_value: 8080 }
+      filter_chains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typed_config:
+                "@type": type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                stat_prefix: ingress_http
+                # Адрес клиента берём из соединения, а не из присланного заголовка.
+                use_remote_address: true
+                route_config:
+                  name: api
+                  virtual_hosts:
+                    - name: api
+                      domains: ["*"]
+                      # Заголовок x-forwarded-for, присланный клиентом, не принимается на веру: Envoy дописывает адрес
+                      # в конец, а iam берёт первое значение, поэтому подставленный клиентом адрес обошёл бы лимит попыток входа.
+                      # Перезаписываем заголовок реальным адресом соединения (без порта).
+                      request_headers_to_add:
+                        - header:
+                            key: x-forwarded-for
+                            value: "%DOWNSTREAM_REMOTE_ADDRESS_WITHOUT_PORT%"
+                          append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                      # CORS нужен для запросов напрямую с origin Vite; через прокси Vite (same-origin) он не используется.
+                      typed_per_filter_config:
+                        envoy.filters.http.cors:
+                          "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.CorsPolicy
+                          allow_origin_string_match:
+                            - exact: http://localhost:5173
+                          allow_methods: "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+                          allow_headers: "Content-Type, Session-Uuid, X-Session-Uuid"
+                          max_age: "600"
+                      routes:
+                        # Маршруты по REST-пути нужны CORS-фильтру: он ищет политику по исходному пути, до того как
+                        # transcoder переписал его в имя gRPC-метода. Preflight тоже ловится здесь и отвечает сам фильтр.
+                        - match:
+                            prefix: "/api/"
+                            headers:
+                              - name: ":method"
+                                string_match: { exact: OPTIONS }
+                          route: { cluster: order_http, timeout: 10s }
+                        - match: { prefix: "/api/auth/" }
+                          route: { cluster: iam_grpc, timeout: 10s }
+                        - match: { prefix: "/api/parts" }
+                          route: { cluster: inventory_grpc, timeout: 10s }
+
+                        # Transcoder переписывает :path в имя gRPC-метода и пересчитывает маршрут, поэтому для iam и
+                        # inventory нужны ещё маршруты по gRPC-методу. Открыты только методы, нужные фронтенду.
+                        - match: { path: "/iam.v1.AuthService/Login" }
+                          route: { cluster: iam_grpc, timeout: 10s }
+                        - match: { path: "/iam.v1.AuthService/Whoami" }
+                          route: { cluster: iam_grpc, timeout: 10s }
+                        - match: { path: "/iam.v1.UserService/Register" }
+                          route: { cluster: iam_grpc, timeout: 10s }
+                        - match: { path: "/inventory.v1.InventoryService/ListParts" }
+                          route: { cluster: inventory_grpc, timeout: 10s }
+
+                        # order отдаёт HTTP как есть. Его middleware читает сессию из X-Session-Uuid,
+                        # а фронтенд шлёт один заголовок Session-Uuid для всех сервисов, поэтому копируем его.
+                        - match: { prefix: "/api/v1" }
+                          request_headers_to_add:
+                            - header:
+                                key: x-session-uuid
+                                value: "%REQ(Session-Uuid)%"
+                              append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                              keep_empty_value: false
+                          route: { cluster: order_http, timeout: 15s }
+                http_filters:
+                  - name: envoy.filters.http.cors
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.cors.v3.Cors
+                  # Общий лимит на экземпляр Envoy: защищает от всплеска запросов. Лимит попыток входа по адресу клиента
+                  # отдельно держит iam. При превышении Envoy отвечает 429 и заголовком x-local-rate-limit.
+                  - name: envoy.filters.http.local_ratelimit
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                      stat_prefix: ingress_local_rate_limit
+                      token_bucket:
+                        max_tokens: 200
+                        tokens_per_fill: 100
+                        fill_interval: 1s
+                      filter_enabled:
+                        runtime_key: local_rate_limit_enabled
+                        default_value: { numerator: 100, denominator: HUNDRED }
+                      filter_enforced:
+                        runtime_key: local_rate_limit_enforced
+                        default_value: { numerator: 100, denominator: HUNDRED }
+                      response_headers_to_add:
+                        - append_action: OVERWRITE_IF_EXISTS_OR_ADD
+                          header: { key: x-local-rate-limit, value: "true" }
+                  # Тело запроса больше 1 МиБ отклоняется с 413: все JSON-запросы API заметно меньше.
+                  - name: envoy.filters.http.buffer
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.buffer.v3.Buffer
+                      max_request_bytes: 1048576
+                  - name: envoy.filters.http.grpc_json_transcoder
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.grpc_json_transcoder.v3.GrpcJsonTranscoder
+                      proto_descriptor: /etc/envoy/proto.pb
+                      services:
+                        - iam.v1.AuthService
+                        - iam.v1.UserService
+                        - inventory.v1.InventoryService
+                      print_options:
+                        # snake_case, как в proto.
+                        preserve_proto_field_names: true
+                        # Нулевые значения (пустые строки, 0) не пропускаем.
+                        always_print_primitive_fields: true
+                      # Ошибки gRPC превращаются в JSON {"code","message","details"}.
+                      convert_grpc_status: true
+                  - name: envoy.filters.http.router
+                    typed_config:
+                      "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+
+  clusters:
+    - name: iam_grpc
+      type: STRICT_DNS
+      connect_timeout: 3s
+      typed_extension_protocol_options:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          explicit_http_config:
+            http2_protocol_options: {}
+      load_assignment:
+        cluster_name: iam_grpc
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: { address: iam-service, port_value: 50053 }
+
+    - name: inventory_grpc
+      type: STRICT_DNS
+      connect_timeout: 3s
+      typed_extension_protocol_options:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          "@type": type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          explicit_http_config:
+            http2_protocol_options: {}
+      load_assignment:
+        cluster_name: inventory_grpc
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: { address: inventory-service, port_value: 50051 }
+
+    - name: order_http
+      type: STRICT_DNS
+      connect_timeout: 3s
+      load_assignment:
+        cluster_name: order_http
+        endpoints:
+          - lb_endpoints:
+              - endpoint:
+                  address:
+                    socket_address: { address: order-service, port_value: 8080 }

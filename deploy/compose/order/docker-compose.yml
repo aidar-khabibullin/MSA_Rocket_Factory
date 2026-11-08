@@ -11,7 +11,7 @@ services: # Раздел, описывающий контейнеры, кото�
       - .env
 
     volumes:
-      - ../../../order/migrations:/app/migrations
+      - ../../../backend/order/migrations:/app/migrations
 
     ports:
       - "${HTTP_PORT}:8080"
@@ -19,6 +19,13 @@ services: # Раздел, описывающий контейнеры, кото�
     depends_on:
       postgres-order:
         condition: service_healthy
+
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://127.0.0.1:8080/health" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
 
     restart: unless-stopped
 

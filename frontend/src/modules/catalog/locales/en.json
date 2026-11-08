@@ -1,0 +1,30 @@
+{
+  "hero": { "title": "Build your own rocket", "text": "Pick parts from the catalog, place an order and pay. Assembly starts right after payment." },
+  "search": { "region": "Search and filters", "label": "Search parts", "placeholder": "Search by name or description" },
+  "categories": {
+    "legend": "Categories",
+    "all": "All",
+    "CATEGORY_ENGINE": "Engines",
+    "CATEGORY_FUEL": "Fuel",
+    "CATEGORY_PORTHOLE": "Portholes",
+    "CATEGORY_WING": "Wings",
+    "other": "Other"
+  },
+  "card": {
+    "manufacturer": "Manufacturer: {{name}}",
+    "add": "Add",
+    "inOrder": "In order",
+    "addAria": "Add to order: {{name}}",
+    "removeAria": "Remove from order: {{name}}"
+  },
+  "stock": { "out": "Out of stock", "low": "{{quantity}} left", "ok": "In stock: {{quantity}}" },
+  "cart": { "count": "Parts in order:", "clear": "Clear", "checkout": "Place order" },
+  "state": {
+    "loading": "Loading the catalog",
+    "notFound": "Nothing found",
+    "empty": "The catalog is empty",
+    "hint": "Change the query or reset the filters.",
+    "reset": "Reset filters"
+  },
+  "errors": { "load": "Could not load the catalog", "createOrder": "Could not create the order" }
+}

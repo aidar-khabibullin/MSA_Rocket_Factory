@@ -1,8 +1,22 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "jsx-a11y", "import", "vitest"],
-  "categories": { "correctness": "error", "suspicious": "warn", "perf": "warn" },
-  "env": { "browser": true, "es2024": true },
+  "plugins": [
+    "react",
+    "typescript",
+    "jsx-a11y",
+    "import",
+    "vitest",
+    "unicorn"
+  ],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn"
+  },
+  "env": {
+    "browser": true,
+    "es2024": true
+  },
   "rules": {
     "react/react-in-jsx-scope": "off",
     "no-console": "warn",
@@ -10,7 +24,125 @@
     "typescript/no-explicit-any": "error",
     "typescript/no-non-null-assertion": "error",
     "import/no-cycle": "error",
-    "import/no-unassigned-import": "off"
+    "import/no-unassigned-import": "off",
+    "unicorn/consistent-function-scoping": "off",
+    "unicorn/filename-case": [
+      "error",
+      {
+        "case": "kebabCase"
+      }
+    ]
   },
-  "ignorePatterns": ["dist", "node_modules"]
+  "ignorePatterns": [
+    "dist",
+    "node_modules"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "src/common/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/app",
+                  "@/app/**",
+                  "@/pages",
+                  "@/pages/**",
+                  "@/modules",
+                  "@/modules/**",
+                  "@/global/**"
+                ],
+                "message": "Слой common не зависит от вышележащих слоёв: допустим только common → common."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/modules/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/app",
+                  "@/app/**",
+                  "@/pages",
+                  "@/pages/**",
+                  "@/global/**"
+                ],
+                "message": "Слой modules может зависеть только от modules и common."
+              },
+              {
+                "group": [
+                  "@/modules/*/**"
+                ],
+                "message": "Импортируйте модуль только через его публичный API: \"@/modules/<имя>\" (index.ts)."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/pages/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/app",
+                  "@/app/**",
+                  "@/pages",
+                  "@/pages/**",
+                  "@/global/**"
+                ],
+                "message": "Слой pages может зависеть только от modules и common."
+              },
+              {
+                "group": [
+                  "@/modules/*/**"
+                ],
+                "message": "Импортируйте модуль только через его публичный API: \"@/modules/<имя>\" (index.ts)."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": [
+        "src/app/**"
+      ],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": [
+                  "@/modules/*/**"
+                ],
+                "message": "Импортируйте модуль только через его публичный API: \"@/modules/<имя>\" (index.ts)."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

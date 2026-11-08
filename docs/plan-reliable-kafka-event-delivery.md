@@ -12,7 +12,7 @@
 **Задачи:**
 
 - [x] Тест: producer `order.paid` отправляет сообщение с ключом `order_uuid`
-- [x] Использовать `order_uuid` ключом в `order/internal/service/producer/order_paid_producer.go`
+- [x] Использовать `order_uuid` ключом в `backend/order/internal/service/producer/order_paid_producer.go`
 - [x] Тест и замена ключа в producer `ship.assembled` в `assembly`
 - [x] Обновить `docs/architecture.md`: п. 8 перенести в решённые
 
@@ -34,7 +34,7 @@
 ### Фаза 3: Повторы и DLQ у consumer
 
 **Цель:** Сообщение не теряется молча: оно либо обработано, либо лежит в `<topic>.dlq`.
-**Затрагивает:** backend (`platform/pkg/kafka`, конфиги сервисов)
+**Затрагивает:** backend (`backend/platform/pkg/kafka`, конфиги сервисов)
 **Задачи:**
 
 - [x] Тесты: 3 вызова с задержками 1/2/4 с; успех на 2-й попытке не создаёт DLQ-запись
@@ -48,7 +48,7 @@
 ### Фаза 4: Дедупликация по event_uuid
 
 **Цель:** Повторная доставка не вызывает двойную сборку и повторное обновление заказа.
-**Затрагивает:** backend (`assembly`, `order`, `platform/pkg/cache`)
+**Затрагивает:** backend (`assembly`, `order`, `backend/platform/pkg/cache`)
 **Задачи:**
 
 - [x] Тесты: дубликат `order.paid` не запускает сборку, дубликат `ship.assembled` не обновляет заказ

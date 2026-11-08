@@ -14,7 +14,7 @@
 
 ## В скоупе
 
-- gRPC `PaymentService.PayOrder` (`shared/proto/payment`, порт `:50052`), с HTTP-шлюзом (`payment/internal/api/gateway`).
+- gRPC `PaymentService.PayOrder` (`backend/shared/proto/payment`, порт `:50052`), с HTTP-шлюзом (`backend/payment/internal/api/gateway`).
 - Генерация UUID транзакции для каждого заказа; повторный `PayOrder` по тому же заказу возвращает ту же транзакцию.
 - `RefundOrder`: возврат платежа (компенсация), идемпотентный по транзакции; после возврата заказ можно оплатить заново.
 - Трассировка (`payment.process`), структурированный лог успешной оплаты.

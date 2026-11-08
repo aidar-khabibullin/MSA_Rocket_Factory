@@ -1,13 +1,12 @@
 go 1.24.4
 
 use (
-	./inventory
-	./order
-	./payment
-	./shared
-	./platform
-	./assembly
-	./notification
-	./iam
-	./bff
+	./backend/inventory
+	./backend/order
+	./backend/payment
+	./backend/shared
+	./backend/platform
+	./backend/assembly
+	./backend/notification
+	./backend/iam
 )

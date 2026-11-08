@@ -17,11 +17,11 @@
 
 ## В скоупе
 
-- Репозиторий сессий в Redis (`iam/internal/repository/redis`) и composite-репозиторий (Redis + PostgreSQL).
+- Репозиторий сессий в Redis (`backend/iam/internal/repository/redis`) и composite-репозиторий (Redis + PostgreSQL).
 - `CacheManager`: `GetSession`, `SetSession`, `DeleteSession`, статистика (`GetStats`, `GetHitRatio`, `LogStats`, `ResetStats`), прогрев (`WarmupCache`).
 - `TokenBlacklistService`: отзыв одного токена, отзыв всех токенов пользователя, проверка отзыва (`IsTokenRevoked`, `IsUserTokensRevoked`).
 - Все ключи в Redis имеют TTL (`Set` всегда задаёт срок жизни).
-- Подключение к Redis через общий пакет `platform/pkg/cache`; таймауты задаются в конфигурации (`REDIS_CONNECTION_TIMEOUT`, `REDIS_IDLE_TIMEOUT`).
+- Подключение к Redis через общий пакет `backend/platform/pkg/cache`; таймауты задаются в конфигурации (`REDIS_CONNECTION_TIMEOUT`, `REDIS_IDLE_TIMEOUT`).
 
 ## Не в скоупе
 
@@ -43,4 +43,4 @@
 - [x] Все ключи создаются с TTL.
 - [x] `GetHitRatio` возвращает долю попаданий по накопленной статистике.
 - [x] Unit-тесты менеджера кеша и чёрного списка.
-- [x] Интеграционный тест с реальным Redis (testcontainers) для Redis-репозитория сессий (`iam/internal/repository/redis`). Composite-репозиторий на реальных базах не проверялся.
+- [x] Интеграционный тест с реальным Redis (testcontainers) для Redis-репозитория сессий (`backend/iam/internal/repository/redis`). Composite-репозиторий на реальных базах не проверялся.

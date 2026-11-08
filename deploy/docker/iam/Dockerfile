@@ -8,9 +8,9 @@ RUN apk add --no-cache git
 WORKDIR /app
 
 # Копируем go.mod и go.sum файлы для кеширования зависимостей
-COPY iam/go.mod iam/go.sum ./iam/
-COPY shared/go.mod shared/go.sum ./shared/
-COPY platform/go.mod platform/go.sum ./platform/
+COPY backend/iam/go.mod backend/iam/go.sum ./iam/
+COPY backend/shared/go.mod backend/shared/go.sum ./shared/
+COPY backend/platform/go.mod backend/platform/go.sum ./platform/
 
 # Загружаем зависимости
 WORKDIR /app/iam
@@ -18,15 +18,13 @@ RUN go mod download
 
 # Возвращаемся в корневую директорию и копируем исходный код
 WORKDIR /app
-COPY iam/ ./iam/
-COPY shared/ ./shared/
-COPY platform/ ./platform/
+COPY backend/iam/ ./iam/
+COPY backend/shared/ ./shared/
+COPY backend/platform/ ./platform/
 
-# Скачиваем grpc-health-probe — это утилита для проверки состояния gRPC-сервиса
-ADD https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.4.37/grpc_health_probe-linux-amd64 ./grpc-health-probe
-
-# Делаем скачанный файл исполняемым
-RUN chmod +x grpc-health-probe
+# Собираем grpc-health-probe — утилиту для проверки состояния gRPC-сервиса. Через Go proxy, а не ADD
+# с GitHub Releases: релизы периодически отвечают 504 и ломают сборку.
+RUN CGO_ENABLED=0 GOBIN=/app go install github.com/grpc-ecosystem/grpc-health-probe@v0.4.37
 
 # Собираем приложение с оптимизациями
 WORKDIR /app/iam

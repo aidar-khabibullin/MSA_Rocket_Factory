@@ -9,12 +9,16 @@ vars:
   BUF_VERSION: '1.53.0'
   PROTOC_GEN_GO_VERSION: 'v1.36.6'
   PROTOC_GEN_GO_GRPC_VERSION: 'v1.5.1'
+  PROTOC_GEN_GRPC_GATEWAY_VERSION: 'v2.27.1'
+  PROTOC_GEN_OPENAPIV2_VERSION: 'v2.27.1'
+  PROTOC_GEN_VALIDATE_VERSION: 'v1.2.1'
   OGEN_VERSION: 'v1.12.0'
   YQ_VERSION: 'v4.45.2'
   MOCKERY_VERSION: 'v2.53.3'
   GRPCURL_VERSION: 'v1.9.3'
   ENVSUBST_VERSION: 'v1.4.3'
 
+  BACKEND_DIR: 'backend'
   BIN_DIR: '{{.ROOT_DIR}}/bin'
   GOLANGCI_LINT: '{{.BIN_DIR}}/golangci-lint'
   GCI: '{{.BIN_DIR}}/gci'
@@ -24,6 +28,9 @@ vars:
   YQ: '{{.BIN_DIR}}/yq'
   PROTOC_GEN_GO: '{{.BIN_DIR}}/protoc-gen-go'
   PROTOC_GEN_GO_GRPC: '{{.BIN_DIR}}/protoc-gen-go-grpc'
+  PROTOC_GEN_GRPC_GATEWAY: '{{.BIN_DIR}}/protoc-gen-grpc-gateway'
+  PROTOC_GEN_OPENAPIV2: '{{.BIN_DIR}}/protoc-gen-openapiv2'
+  PROTOC_GEN_VALIDATE: '{{.BIN_DIR}}/protoc-gen-validate'
   MOCKERY: "{{.BIN_DIR}}/mockery"
   GRPCURL: '{{.BIN_DIR}}/grpcurl'
   ENVSUBST: '{{.BIN_DIR}}/envsubst'
@@ -32,13 +39,13 @@ vars:
   NODE_MODULES_DIR: '{{.ROOT_DIR}}/node_modules/.bin'
   REDOCLY: '{{.NODE_MODULES_DIR}}/redocly'
 
-  OPEN_API_ORDER_V1_BASE: '{{.ROOT_DIR}}/shared/api/order/v1/order.openapi.yaml'
-  OPEN_API_ORDER_V1_BUNDLE: '{{.ROOT_DIR}}/shared/api/bundles/order.openapi.v1.bundle.yaml'
+  OPEN_API_ORDER_V1_BASE: '{{.ROOT_DIR}}/{{.BACKEND_DIR}}/shared/api/order/v1/order.openapi.yaml'
+  OPEN_API_ORDER_V1_BUNDLE: '{{.ROOT_DIR}}/{{.BACKEND_DIR}}/shared/api/bundles/order.openapi.v1.bundle.yaml'
 
-  OPEN_API_FILES: '{{.ROOT_DIR}}/shared/api/bundles'
+  OPEN_API_FILES: '{{.ROOT_DIR}}/{{.BACKEND_DIR}}/shared/api/bundles'
   COVERAGE_DIR: '{{.ROOT_DIR}}/coverage'
   COVERAGE_FILE: total.out
-  ORDER_MIGRATIONS_DIR: './order/migrations'
+  ORDER_MIGRATIONS_DIR: './{{.BACKEND_DIR}}/order/migrations'
   POSTGRES_DSN: 'postgres://order-service-user:order-service-password@localhost:5432/order-service?sslmode=disable'
 
   MODULES: assembly inventory order payment platform iam notification
@@ -83,18 +90,18 @@ tasks:
         echo "🧼 Форматируем через gofumpt ..."
         
         for module in {{.MODULES}}; do
-          if [ -d "$module" ]; then
+          if [ -d "{{.BACKEND_DIR}}/$module" ]; then
             echo "🧼 Форматируем $module"
-            find $module -type f -name '*.go' ! -path '*/mocks/*' -exec {{.GOFUMPT}} -extra -w {} +
+            find {{.BACKEND_DIR}}/$module -type f -name '*.go' ! -path '*/mocks/*' -exec {{.GOFUMPT}} -extra -w {} +
           fi
         done
       - |
         echo "🎯 Сортируем импорты через gci ..."
         
         for module in {{.MODULES}}; do
-          if [ -d "$module" ]; then
+          if [ -d "{{.BACKEND_DIR}}/$module" ]; then
             echo "🎯 Сортируем импорты в $module"
-            find $module -type f -name '*.go' ! -path '*/mocks/*' -exec {{.GCI}} write -s standard -s default -s "prefix(github.com/aidar-khabibullin/MSA_Rocket_Factory)" {} +
+            find {{.BACKEND_DIR}}/$module -type f -name '*.go' ! -path '*/mocks/*' -exec {{.GCI}} write -s standard -s default -s "prefix(github.com/aidar-khabibullin/MSA_Rocket_Factory)" {} +
           fi
         done
 
@@ -136,9 +143,9 @@ tasks:
         ERR=0
         echo "🔍 Линтим все модули ..."
         for mod in {{.MODULES}}; do
-          if [ -d "$mod" ]; then
+          if [ -d "{{.BACKEND_DIR}}/$mod" ]; then
             echo "🔍 Линтим $mod module"
-            {{.GOLANGCI_LINT}} run $mod/... --config=.golangci.yml || ERR=1
+            {{.GOLANGCI_LINT}} run ./{{.BACKEND_DIR}}/$mod/... --config=.golangci.yml || ERR=1
           fi
         done
         exit $ERR
@@ -169,20 +176,39 @@ tasks:
           echo '📦 Installing protoc-gen-go-grpc...'
           GOBIN={{.BIN_DIR}} go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@{{.PROTOC_GEN_GO_GRPC_VERSION}}
         }
+        [ -f {{.PROTOC_GEN_GRPC_GATEWAY}} ] || {
+          echo '📦 Installing protoc-gen-grpc-gateway...'
+          GOBIN={{.BIN_DIR}} go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@{{.PROTOC_GEN_GRPC_GATEWAY_VERSION}}
+        }
+        [ -f {{.PROTOC_GEN_OPENAPIV2}} ] || {
+          echo '📦 Installing protoc-gen-openapiv2...'
+          GOBIN={{.BIN_DIR}} go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@{{.PROTOC_GEN_OPENAPIV2_VERSION}}
+        }
+        [ -f {{.PROTOC_GEN_VALIDATE}} ] || {
+          echo '📦 Installing protoc-gen-validate...'
+          GOBIN={{.BIN_DIR}} go install github.com/envoyproxy/protoc-gen-validate@{{.PROTOC_GEN_VALIDATE_VERSION}}
+        }
 
   proto:gen:
     deps: [ install-buf, proto:install-plugins, proto:lint ]
     desc: Генерация Go-кода из .proto
-    dir: shared/proto
+    dir: '{{.BACKEND_DIR}}/shared/proto'
     cmds:
       - '{{.BUF}} generate'
 
   proto:lint:
     deps: [ install-buf, proto:install-plugins ]
     desc: Проверка .proto-файлов на соответствие стилю
-    dir: shared/proto
+    dir: '{{.BACKEND_DIR}}/shared/proto'
     cmds:
       - '{{.BUF}} lint'
+
+  proto:descriptor:
+    deps: [ install-buf ]
+    desc: "Собирает дескриптор proto для Envoy (gRPC-JSON transcoder) в deploy/compose/envoy/proto.pb"
+    dir: '{{.BACKEND_DIR}}/shared/proto'
+    cmds:
+      - '{{.BUF}} build --as-file-descriptor-set --path iam --path inventory -o ../../../deploy/compose/envoy/proto.pb'
 
   redocly-cli:install:
     desc: Установить локально Redocly CLI
@@ -246,9 +272,9 @@ tasks:
       - |
         echo "🔄 Обновление зависимостей в go.mod во всех модулях"
         for mod in {{.MODULES}}; do
-          if [ -d "$mod" ]; then
+          if [ -d "{{.BACKEND_DIR}}/$mod" ]; then
             echo "🔄 Обновление зависимостей в $mod"
-            (cd "$mod" && go mod tidy -compat=1.24) || exit 1
+            (cd "{{.BACKEND_DIR}}/$mod" && go mod tidy -compat=1.24) || exit 1
           fi
         done
 
@@ -293,7 +319,7 @@ tasks:
         for mod in {{.MODULES}}; do
           echo "📦 Обрабатываем модуль: $mod"
         
-          TARGET_PKGS=$(go list ./$mod/... \
+          TARGET_PKGS=$(go list ./{{.BACKEND_DIR}}/$mod/... \
             | grep -E '/(internal/(service|repository))' \
             | grep -vE '/(mocks|testdata|pkg|api|proto|pb|cmd)' \
             | paste -sd "," -)
@@ -368,9 +394,9 @@ tasks:
         go clean -testcache
         ERR=0
         for mod in {{.MODULES}}; do
-          if [ -d "$mod" ]; then
+          if [ -d "{{.BACKEND_DIR}}/$mod" ]; then
             echo "🧪 Тестируем модуль $mod (только юнит-тесты)"
-            go test -v -race $(go list ./$mod/... | grep -v -E '(/integration|/tests/integration|/integrationtests)') || ERR=1
+            go test -v -race $(go list ./{{.BACKEND_DIR}}/$mod/... | grep -v -E '(/integration|/tests/integration|/integrationtests)') || ERR=1
           fi
         done
         exit $ERR
@@ -481,6 +507,26 @@ tasks:
       - echo "[task] 🛑 Останавливаем IAM с зависимостями"
       - docker compose down --volumes
 
+  up-envoy:
+    desc: Поднять Envoy, единую точку входа для фронтенда (REST/JSON -> gRPC)
+    deps: [ proto:descriptor ]
+    dir: deploy/compose/envoy
+    cmds:
+      - echo "[task] 📦 Поднимаем Envoy"
+      - docker compose up --detach --force-recreate
+
+  down-envoy:
+    desc: Остановить и удалить Envoy
+    dir: deploy/compose/envoy
+    cmds:
+      - echo "[task] 🛑 Останавливаем Envoy"
+      - docker compose down
+
+  envoy:test:
+    desc: "Smoke-тест Envoy: маршруты, ошибки, CORS, ограничитель входа (нужен поднятый стек: task up-all)"
+    cmds:
+      - bash scripts/envoy/smoke.sh
+
   up-all:
     desc: Поднять все сервисы по очереди вместе с зависимостями
     cmds:
@@ -491,10 +537,12 @@ tasks:
       - task up-order
       - task up-assembly
       - task up-notification
+      - task up-envoy
 
   down-all:
     desc: Остановить и удалить все сервисы по очереди вместе с зависимостями
     cmds:
+      - task down-envoy
       - task down-order
       - task down-payment
       - task down-inventory
@@ -873,9 +921,9 @@ tasks:
         ERR=0
         echo "🚀 Запуск интеграционных тестов (по тегу integration) для модулей: {{.MODULES}}"
         for mod in {{.MODULES}}; do
-          if [ -d "$mod" ]; then           
+          if [ -d "{{.BACKEND_DIR}}/$mod" ]; then           
             echo "▶️ Запуск интеграционных тестов для $mod"
-            go test -v -tags=integration ./$mod/... || ERR=1
+            go test -v -tags=integration ./{{.BACKEND_DIR}}/$mod/... || ERR=1
           fi
         done
         exit $ERR
@@ -892,7 +940,7 @@ tasks:
       - npm install
 
   frontend:dev:
-    desc: "Запускает фронтенд на http://localhost:5173 (нужны bff и поднятый стек)"
+    desc: "Запускает фронтенд на http://localhost:5173 (нужен поднятый стек с Envoy на :8085)"
     dir: frontend
     cmds:
       - "[ -d node_modules ] || npm install"
@@ -914,11 +962,7 @@ tasks:
       - npm run lint
       - npm run test
 
-  bff:run:
-    desc: "Запускает BFF на :8095 (HTTP-шлюз к iam и inventory для фронтенда)"
-    cmds:
-      - go run ./bff
-
   web:
-    desc: "Запускает BFF и фронтенд вместе (Ctrl+C останавливает оба)"
-    deps: [ bff:run, frontend:dev ]
+    desc: "Запускает фронтенд (Envoy поднимается стеком: task up-all)"
+    cmds:
+      - task: frontend:dev

@@ -1,0 +1,190 @@
+syntax = "proto3";
+
+// Package inventory.v1 содержит API для хранения и предоставления информации о деталях для сборки космических кораблей.
+package inventory.v1;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/aidar-khabibullin/MSA_Rocket_Factory/shared/pkg/proto/inventory/v1;inventory_v1";
+
+// InventoryService предоставляет API для работы с деталями
+service InventoryService {
+
+  // GetPart получает информацию о детали по UUID
+  rpc GetPart(GetPartRequest) returns (GetPartResponse);
+
+  // ListParts получает список деталей
+  // Через HTTP-шлюз вызывается как GET /api/parts: фильтр передаётся параметрами запроса (filter.category=...),
+  // без параметров возвращаются все детали. Сессия идёт заголовком Session-Uuid (gRPC-metadata session-uuid).
+  rpc ListParts(ListPartsRequest) returns (ListPartsResponse) {
+    option (google.api.http) = {
+      get: "/api/parts"
+    };
+  }
+
+  // ReserveParts резервирует детали под заказ: уменьшает остаток каждой детали на её количество в заказе.
+  // Операция идемпотентна по order_uuid и атомарна: если хотя бы одной детали не хватает, не резервируется ничего.
+  rpc ReserveParts(ReservePartsRequest) returns (ReservePartsResponse);
+
+  // ReleaseParts снимает резерв заказа и возвращает остатки. Идемпотентна: для заказа без резерва ничего не делает.
+  rpc ReleaseParts(ReleasePartsRequest) returns (ReleasePartsResponse);
+
+}
+
+// ReservePartsRequest запрашивает резерв деталей под заказ
+message ReservePartsRequest {
+  // order_uuid уникальный идентификатор заказа (ключ идемпотентности)
+  string order_uuid = 1;
+
+  // part_uuids детали заказа; повторяющийся uuid означает несколько штук
+  repeated string part_uuids = 2;
+}
+
+// ReservePartsResponse подтверждает резерв
+message ReservePartsResponse {}
+
+// ReleasePartsRequest запрашивает снятие резерва заказа
+message ReleasePartsRequest {
+  // order_uuid уникальный идентификатор заказа
+  string order_uuid = 1;
+}
+
+// ReleasePartsResponse подтверждает снятие резерва
+message ReleasePartsResponse {}
+
+// GetPartRequest запрашивает информацию о детали по UUID
+message GetPartRequest {
+  // part_uuid уникальный идентификатор детали
+  string part_uuid = 1;
+}
+
+// GetPartResponse отвечает за запрос информации о детали по UUID
+message GetPartResponse {
+  // part информация о детали
+  Part part = 1;
+}
+
+// ListPartsRequest запрашивает список деталей
+message ListPartsRequest {
+  // filter фильтр для списка деталей
+  PartsFilter filter =1;
+}
+
+// ListPartsResponse отвечает за запрос списка деталей
+message ListPartsResponse {
+  // part информация о деталях
+  repeated Part parts = 1;
+}
+
+// PartsFilter фильтр для списка деталей
+message PartsFilter {
+  // part_uuid уникальный идентификатор детали
+  repeated string part_uuid = 1;
+
+  // part_name имя детали
+  repeated string part_name = 2;
+
+  // category категория детали
+  repeated Category category = 3;
+
+  // manufacturer_country страна производителя детали
+  repeated string manufacturer_country = 4;
+
+  // tags теги детали
+  repeated string tags = 5;
+}
+
+// Part информация о детали
+message Part {
+    // part_uuid уникальный идентификатор детали
+    string part_uuid = 1;
+
+    // name название детали
+    string name = 2;
+
+    // description описание детали
+    string description = 3;
+
+    // price цена за единицу
+    double price = 4;
+
+    // stock_quantity количество на складе
+    int64 stock_quantity = 5;
+
+    // category категория
+    Category category = 6;
+
+    // dimensions размеры детали
+    Dimensions dimensions = 7;
+
+    // manufacturer информация о производителе
+    Manufacturer manufacturer = 8;
+
+    // tags теги для быстрого поиска
+    repeated string tags = 9;
+
+    // metadata гибкие метаданные
+    map<string, Value> metadata = 10;
+
+    // created_at дата создания
+    google.protobuf.Timestamp created_at = 11;
+
+    // updated_at дата обновления
+    google.protobuf.Timestamp updated_at = 12;
+}
+
+// Category категория детали
+enum Category {
+  // 0 - Неизвестная категория
+  CATEGORY_UNSPECIFIED = 0;
+
+  // 1 - Двигатель
+  CATEGORY_ENGINE = 1;
+
+  // 2 - Топливо
+  CATEGORY_FUEL = 2;
+
+  // 3 - Иллюминатор
+  CATEGORY_PORTHOLE = 3;
+
+  // 4 - Крыло
+  CATEGORY_WING = 4;
+}
+
+// Dimensions размеры детали
+message Dimensions {
+    // length длина
+    double length = 1;
+
+    // width ширина
+    double width = 2;
+
+    // height высота
+    double height = 3;
+
+    // weight вес
+    double weight = 4;
+}
+
+// Manufacturer информация о производителе
+message Manufacturer {
+    // name название производителя
+    string name = 1;
+
+    // country страна производителя
+    string country = 2;
+
+    // url ссылка на страницу производителя
+    string url = 3;
+}
+
+// Универсальное значение одного из возможных типов
+message Value {
+  oneof kind {
+    string string_value = 1;
+    int64 int64_value = 2;
+    double double_value = 3;
+    bool bool_value = 4;
+  }
+}

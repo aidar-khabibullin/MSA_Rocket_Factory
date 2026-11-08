@@ -77,14 +77,14 @@ jobs:
           echo "🔍 Поиск модулей с internal пакетами..."
           
           for mod in ${{ inputs.modules }}; do
-            if [ -d "$mod" ] && [ -f "$mod/go.mod" ]; then
+            if [ -d "backend/$mod" ] && [ -f "backend/$mod/go.mod" ]; then
               echo "📦 Обрабатываем модуль $mod"
-              cd "$mod"
+              cd "backend/$mod"
               
               # Проверяем наличие internal пакетов
               if ! go list ./internal/... 2>/dev/null | grep -q .; then
                 echo "⚠️ В модуле $mod нет пакетов internal"
-                cd ..
+                cd "$GITHUB_WORKSPACE"
                 continue
               fi
               
@@ -123,7 +123,7 @@ jobs:
                 echo "⚠️ Не найдено пакетов для тестирования в $mod"
               fi
               
-              cd ..
+              cd "$GITHUB_WORKSPACE"
             else
               echo "⚠️ Модуль $mod не найден или не содержит go.mod"
             fi

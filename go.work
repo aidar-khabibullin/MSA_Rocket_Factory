@@ -9,5 +9,4 @@ use (
 	./backend/assembly
 	./backend/notification
 	./backend/iam
-	./bff
 )

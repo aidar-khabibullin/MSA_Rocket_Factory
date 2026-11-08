@@ -940,7 +940,7 @@ tasks:
       - npm install
 
   frontend:dev:
-    desc: "Запускает фронтенд на http://localhost:5173 (нужны bff и поднятый стек)"
+    desc: "Запускает фронтенд на http://localhost:5173 (нужен поднятый стек с Envoy на :8085)"
     dir: frontend
     cmds:
       - "[ -d node_modules ] || npm install"
@@ -962,11 +962,7 @@ tasks:
       - npm run lint
       - npm run test
 
-  bff:run:
-    desc: "Запускает BFF на :8095 (HTTP-шлюз к iam и inventory для фронтенда)"
-    cmds:
-      - go run ./bff
-
   web:
-    desc: "Запускает BFF и фронтенд вместе (Ctrl+C останавливает оба)"
-    deps: [ bff:run, frontend:dev ]
+    desc: "Запускает фронтенд (Envoy поднимается стеком: task up-all)"
+    cmds:
+      - task: frontend:dev

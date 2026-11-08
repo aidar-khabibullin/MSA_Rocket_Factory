@@ -32,3 +32,12 @@ export function categoryMeta(key: string): CategoryMeta {
 /** Ключ подписи категории в словаре catalog; неизвестная категория сервера попадает в «Прочее». */
 export const categoryLabelKey = (key: string): `categories.${CategoryKey}` | 'categories.other' =>
   key in CATEGORIES ? `categories.${key as CategoryKey}` : 'categories.other'
+
+const CATEGORY_PREFIX = 'CATEGORY_'
+
+/** Значение категории в URL: `CATEGORY_ENGINE` → `engine`. Ссылка читается человеком и не зависит от префикса proto. */
+export const categoryToParam = (key: CategoryKey): string => key.slice(CATEGORY_PREFIX.length).toLowerCase()
+
+/** Обратное преобразование; неизвестное или пустое значение из URL даёт null, а не ломает страницу. */
+export const categoryFromParam = (param: string | null): CategoryKey | null =>
+  CATEGORY_KEYS.find((key) => categoryToParam(key) === param) ?? null

@@ -1,8 +1,12 @@
-import { useDeferredValue, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+import { useDebouncedValue } from '@/common/lib/use-debounced-value'
+import { useUrlParam } from '@/common/lib/use-url-param'
 import { useRequiredSession } from '@/modules/auth'
 import {
+  categoryFromParam,
+  categoryToParam,
   countByCategory,
   filterParts,
   sumSelected,
@@ -12,6 +16,10 @@ import {
   type Part,
 } from '@/modules/catalog'
 import { rememberOrder, useCreateOrder } from '@/modules/orders'
+
+const QUERY_PARAM = 'q'
+const CATEGORY_PARAM = 'category'
+const URL_SYNC_DELAY_MS = 300
 
 // Стабильная ссылка: `parts ?? []` создавал бы новый массив на каждый рендер и ломал бы useMemo.
 const NO_PARTS: readonly Part[] = []
@@ -26,8 +34,30 @@ export function useCatalogPage() {
   const clear = useCartStore((state) => state.clear)
   const { mutateAsync: createOrder, isPending: isCreating, error: createError } = useCreateOrder()
 
-  const [query, setQuery] = useState('')
-  const [category, setCategory] = useState<CategoryKey | null>(null)
+  // Фильтры живут в URL (?q=…&category=…): страницу можно обновить или отправить ссылкой.
+  const [urlQuery, setUrlQuery] = useUrlParam(QUERY_PARAM)
+  const [urlCategory, setUrlCategory] = useUrlParam(CATEGORY_PARAM)
+  const category = categoryFromParam(urlCategory)
+  const setCategory = (next: CategoryKey | null) => setUrlCategory(next === null ? null : categoryToParam(next))
+
+  // Поле ввода держит собственное состояние, чтобы набор текста не ждал обновления адреса;
+  // в URL значение попадает с задержкой.
+  const [query, setQuery] = useState(urlQuery ?? '')
+  const debouncedQuery = useDebouncedValue(query, URL_SYNC_DELAY_MS)
+
+  useEffect(() => {
+    const next = debouncedQuery.trim() === '' ? null : debouncedQuery
+    if (next !== urlQuery) setUrlQuery(next)
+    // Только на изменение введённого текста: внешние изменения URL обрабатывает эффект ниже.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedQuery])
+
+  useEffect(() => {
+    // Адрес изменили снаружи (ссылка «Каталог» в шапке, ручная правка): поле подхватывает значение.
+    if ((urlQuery ?? '') !== debouncedQuery.trim()) setQuery(urlQuery ?? '')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlQuery])
+
   // Ввод остаётся отзывчивым: тяжёлая фильтрация идёт по отложенному значению (правило rerender-use-deferred-value).
   const deferredQuery = useDeferredValue(query)
 

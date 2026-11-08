@@ -1,0 +1,50 @@
+{
+  "title": {
+    "login": "Welcome back",
+    "register": "Create an account"
+  },
+  "subtitle": {
+    "login": "Sign in to order a rocket",
+    "register": "It takes less than a minute"
+  },
+  "switch": {
+    "login": {
+      "prompt": "No account yet?",
+      "action": "Create an account"
+    },
+    "register": {
+      "prompt": "Already registered?",
+      "action": "Sign in"
+    }
+  },
+  "promo": {
+    "headline": "From picking parts to a finished rocket in a few clicks",
+    "benefits": {
+      "catalog": "A catalog of engines, fuel and components",
+      "flow": "Payment and assembly in a single flow",
+      "notify": "Order status notifications in Telegram"
+    }
+  },
+  "form": {
+    "login": "Login",
+    "email": "Email",
+    "password": "Password",
+    "submitLogin": "Sign in",
+    "submitRegister": "Sign up",
+    "failed": "Could not sign in. Please try again."
+  },
+  "validation": {
+    "loginMin": "At least 3 characters",
+    "passwordInvalid": "The password does not meet the requirements"
+  },
+  "passwordRules": {
+    "title": "Password requirements",
+    "length": "At least 8 characters",
+    "upper": "An uppercase letter",
+    "lower": "A lowercase letter",
+    "digit": "A digit",
+    "special": "A special character (! ? #)",
+    "done": ": met",
+    "todo": ": not met"
+  }
+}

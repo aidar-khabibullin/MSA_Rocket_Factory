@@ -1,0 +1,63 @@
+{
+  "status": {
+    "PENDING_PAYMENT": "Awaiting payment",
+    "PAID": "Paid, assembling",
+    "ASSEMBLED": "Rocket assembled",
+    "CANCELLED": "Cancelled"
+  },
+  "payment": {
+    "title": "Payment method",
+    "CARD": "Bank card",
+    "SBP": "Fast Payment System",
+    "CREDIT_CARD": "Credit card",
+    "INVESTOR_MONEY": "Investor money"
+  },
+  "steps": {
+    "label": "Order progress",
+    "created": "Created",
+    "paid": "Paid",
+    "assembled": "Assembled",
+    "cancelled": "Order cancelled"
+  },
+  "composition": {
+    "title": "Order contents",
+    "loading": "Loading contents…",
+    "unavailable": "Part unavailable",
+    "quantity": "{{quantity}} pcs"
+  },
+  "list": {
+    "title": "My orders",
+    "loading": "Loading orders",
+    "emptyTitle": "No orders yet",
+    "emptyLink": "Pick parts in the catalog",
+    "emptyTail": "and place your first order.",
+    "partsCount": "Parts: {{n}}",
+    "error": "Could not load orders"
+  },
+  "details": {
+    "back": "All orders",
+    "loading": "Loading the order",
+    "notFound": "Order not found",
+    "order": "Order",
+    "statusRegion": "Order status",
+    "assembling": "The rocket is being assembled, usually it takes 5–15 seconds.",
+    "ready": "Your rocket is ready. A notification was sent to Telegram if it is connected.",
+    "infoRegion": "Order details",
+    "partsInOrder": "Parts in order",
+    "total": "Total",
+    "paymentMethod": "Payment method",
+    "transaction": "Transaction"
+  },
+  "pay": {
+    "region": "Payment",
+    "pay": "Pay",
+    "cancel": "Cancel order",
+    "failed": "The operation failed",
+    "paid": "Order paid",
+    "cancelled": "Order cancelled",
+    "confirmTitle": "Cancel the order?",
+    "confirmText": "The order will be cancelled and cannot be restored.",
+    "confirmAction": "Yes, cancel",
+    "keep": "Keep the order"
+  }
+}

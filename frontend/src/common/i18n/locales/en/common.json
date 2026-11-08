@@ -1,0 +1,31 @@
+{
+  "nav": {
+    "main": "Main navigation",
+    "catalog": "Catalog",
+    "orders": "My orders"
+  },
+  "account": {
+    "signOut": "Sign out",
+    "signOutAria": "Sign out of your account"
+  },
+  "theme": {
+    "toLight": "Switch to light theme",
+    "toDark": "Switch to dark theme"
+  },
+  "language": {
+    "switchTo": "Switch language to {{language}}"
+  },
+  "errors": {
+    "title": "Something went wrong",
+    "network": "The server is unavailable. Check your connection and try again.",
+    "status": "Error {{status}}",
+    "routeNotFound": "This page does not exist.",
+    "routeGeneric": "Something went wrong. Reload the page and try again.",
+    "routeTitle": "Could not open the page",
+    "home": "Go home",
+    "retry": "Reload"
+  },
+  "toast": {
+    "sessionExpired": "Your session has expired. Please sign in again."
+  }
+}

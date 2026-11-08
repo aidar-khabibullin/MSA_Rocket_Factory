@@ -3,10 +3,10 @@
  * bundle-dynamic-imports), а шапка предзагружает по наведению и фокусу (правило bundle-preload).
  */
 export const pageLoaders = {
-  catalog: () => import('@/features/catalog/CatalogPage'),
-  orders: () => import('@/features/orders/OrdersPage'),
-  order: () => import('@/features/orders/OrderPage'),
-  auth: () => import('@/features/auth/AuthPage'),
+  catalog: () => import('@/pages/catalog-page/catalog-page'),
+  orders: () => import('@/pages/orders-page/orders-page'),
+  order: () => import('@/pages/order-page/order-page'),
+  auth: () => import('@/pages/auth-page/auth-page'),
 } as const
 
 export type PageName = keyof typeof pageLoaders

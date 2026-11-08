@@ -9,6 +9,8 @@ task web            # BFF и фронтенд вместе (нужен подн�
 task frontend:check # типы, линтер, тесты
 ```
 
+Каталог компонентов (Storybook, без бэкенда): `npm run storybook` → http://localhost:6006. Истории лежат рядом с компонентами (`*.stories.tsx`), тему и язык можно переключить на панели.
+
 Dev-сервер проксирует `/api/auth`, `/api/parts`, `/api/health` на BFF (`:8095`) и `/api/v1` на `order` (`:8080`).
 
 ## Структура (FEOD)

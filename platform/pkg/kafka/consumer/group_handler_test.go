@@ -21,7 +21,7 @@ func (nopLogger) Error(context.Context, string, ...zap.Field) {}
 
 type fakeSession struct {
 	sarama.ConsumerGroupSession
-	ctx    context.Context
+	ctx    context.Context //nolint:containedctx // тестовая заглушка sarama.ConsumerGroupSession должна отдавать контекст из Context()
 	mu     sync.Mutex
 	marked []int64
 }

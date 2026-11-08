@@ -87,7 +87,7 @@ func (s *redisDedupStore) Seen(ctx context.Context, key string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	return redis.Bool(conn.Do("EXISTS", key))
 }
@@ -97,7 +97,7 @@ func (s *redisDedupStore) Mark(ctx context.Context, key string, ttl time.Duratio
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	_, err = conn.Do("SET", key, "1", "PX", ttl.Milliseconds())
 	return err

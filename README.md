@@ -138,7 +138,7 @@ GitHub Actions (`.github/workflows`):
 - **Фронтенд:** typecheck, lint, тесты и сборка.
 - **Безопасность:** `govulncheck` для всех Go-модулей, `gitleaks` (секреты), `npm audit` и Trivy для Dockerfile и compose.
 
-Версии Go и инструментов берутся из `Taskfile.yml`. Зависимости обновляет Dependabot (`.github/dependabot.yml`).
+Версии Go и инструментов берутся из `Taskfile.yml`.
 
 ## Надёжность и безопасность
 

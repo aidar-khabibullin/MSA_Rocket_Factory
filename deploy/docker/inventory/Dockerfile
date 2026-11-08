@@ -22,11 +22,9 @@ COPY backend/inventory/ ./inventory/
 COPY backend/shared/ ./shared/
 COPY backend/platform/ ./platform/
 
-# Скачиваем grpc-health-probe — это утилита для проверки состояния gRPC-сервиса
-ADD https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.4.37/grpc_health_probe-linux-amd64 ./grpc-health-probe
-
-# Делаем скачанный файл исполняемым
-RUN chmod +x grpc-health-probe
+# Собираем grpc-health-probe — утилиту для проверки состояния gRPC-сервиса. Через Go proxy, а не ADD
+# с GitHub Releases: релизы периодически отвечают 504 и ломают сборку.
+RUN CGO_ENABLED=0 GOBIN=/app go install github.com/grpc-ecosystem/grpc-health-probe@v0.4.37
 
 # Собираем приложение с оптимизациями
 WORKDIR /app/inventory

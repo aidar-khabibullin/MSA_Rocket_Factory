@@ -1,7 +1,7 @@
 import ArrowRightFromSquare from '@gravity-ui/icons/ArrowRightFromSquare'
 import { Button } from '@heroui/react/button'
 import { useTranslation } from 'react-i18next'
-import { Navigate, NavLink, Outlet } from 'react-router-dom'
+import { Navigate, Outlet } from 'react-router-dom'
 
 import { signOut, useSession } from '@/modules/auth'
 import { Footer, StatusBanner } from '@/modules/system'
@@ -9,39 +9,9 @@ import { Logo } from '@/common/components/logo'
 import { LanguageToggle } from '@/common/components/language-toggle'
 import { ThemeToggle } from '@/common/components/theme-toggle'
 
-import { preloadPage, type PageName } from '@/app/routes'
+import { Navigation } from './navigation'
 
-const NAV: ReadonlyArray<{ to: string; labelKey: 'nav.catalog' | 'nav.orders'; page: PageName; end?: boolean }> = [
-  { to: '/', labelKey: 'nav.catalog', page: 'catalog', end: true },
-  { to: '/orders', labelKey: 'nav.orders', page: 'orders' },
-]
-
-const linkClass = ({ isActive }: { isActive: boolean }) =>
-  `rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-    isActive ? 'bg-accent/15 text-accent' : 'text-muted hover:text-foreground'
-  }`
-
-function Navigation({ className }: { className: string }) {
-  const { t } = useTranslation()
-  return (
-    <nav className={className} aria-label={t('nav.main')}>
-      {NAV.map(({ to, labelKey, page, end }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={end}
-          className={linkClass}
-          onMouseEnter={() => preloadPage(page)}
-          onFocus={() => preloadPage(page)}
-        >
-          {t(labelKey)}
-        </NavLink>
-      ))}
-    </nav>
-  )
-}
-
-export function Layout() {
+export const Layout = () => {
   const { t } = useTranslation()
   const session = useSession()
 
